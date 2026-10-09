@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Aviary Ledger — A Field Archive of Birds</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Public+Sans:wght@300;400;500;600&family=Special+Elite&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <div class="bg-layer"></div>
+  <div class="grain"></div>
+
+  <header class="top">
+    <div class="wordmark">
+      <svg viewBox="0 0 100 100" fill="none">
+        <path d="M10 60 Q30 20 50 45 Q70 20 90 60 Q65 50 50 68 Q35 50 10 60Z" fill="#C99A3E"/>
+      </svg>
+      THE AVIARY LEDGER
+    </div>
+    <div class="tag-eyebrow">Est. Field Archive</div>
+  </header>
+
+  <section class="hero">
+    <div class="flock" id="flock"></div>
+    <div class="hero-eyebrow">Vol. I — A Living Catalog</div>
+    <h1 class="hero-title">Every bird<br>has a <em>dossier.</em></h1>
+    <p class="hero-sub">
+      Nine specimens, field-recorded and bound into this ledger. Tap any card to pull its full record — birth, age, wingspan, call, and the notes scrawled in the margins.
+    </p>
+    <div class="hero-line"></div>
+  </section>
+
+  <div class="rail">
+    <span class="rail-label">SEARCH LEDGER →</span>
+    <input id="search" type="text" placeholder="species, family, or habitat…">
+
+    <div class="chipset" id="chips">
+      <button class="chip active" data-f="all">All</button>
+      <button class="chip" data-f="raptor">Raptors</button>
+      <button class="chip" data-f="water">Water &amp; Ice</button>
+      <button class="chip" data-f="tropical">Tropical</button>
+    </div>
+  </div>
+
+  <main>
+    <div class="grid" id="grid"></div>
+  </main>
+
+  <footer>
+    <p>THE AVIARY LEDGER · NINE SPECIMENS CATALOGED · HANDLE PAGES WITH CARE</p>
+  </footer>
+
+  <div class="scrim" id="scrim">
+    <div class="dossier" id="dossier">
+      <button class="dossier-close" id="closeBtn">✕</button>
+      <div class="stamp" id="stamp">EXAMINED</div>
+
+      <div class="dossier-head">
+        <div class="dossier-illus" id="dIllus"></div>
+        <div>
+          <h2 class="dossier-name" id="dName"></h2>
+          <div class="dossier-sci" id="dSci"></div>
+        </div>
+      </div>
+
+      <div class="fields" id="dFields"></div>
+      <div class="notes-box" id="dNotes"></div>
+    </div>
+  </div>
+
+  <script src="js/script.js"></script>
+</body>
+</html>

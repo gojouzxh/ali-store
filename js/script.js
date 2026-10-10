@@ -1,203 +1,256 @@
+const birdSvg = (color) => {
+  const namespace = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(namespace, 'svg');
+  svg.setAttribute('viewBox', '0 0 120 120');
+  svg.setAttribute('role', 'img');
+  svg.setAttribute('aria-hidden', 'true');
+
+  const body = document.createElementNS(namespace, 'path');
+  body.setAttribute(
+    'd',
+    'M23 69c0-18 15-32 35-32 10 0 18 4 24 10l20-5-11 14c2 4 3 8 3 13 0 19-16 34-37 34-16 0-29-9-34-22L9 93l10-23-8-18 22 10c-3 2-6 4-10 7Z'
+  );
+  body.setAttribute('fill', color);
+
+  const wing = document.createElementNS(namespace, 'path');
+  wing.setAttribute('d', 'M36 70c13-13 28-17 44-12-7 13-18 22-34 27');
+  wing.setAttribute('fill', 'none');
+  wing.setAttribute('stroke', 'rgba(42,33,24,0.35)');
+  wing.setAttribute('stroke-width', '4');
+  wing.setAttribute('stroke-linecap', 'round');
+
+  const eye = document.createElementNS(namespace, 'circle');
+  eye.setAttribute('cx', '79');
+  eye.setAttribute('cy', '51');
+  eye.setAttribute('r', '2.5');
+  eye.setAttribute('fill', '#2A2118');
+
+  svg.append(body, wing, eye);
+  return svg;
+};
+
 const birds = [
   {
     id: 1,
-    tag: 'raptor',
-    name: 'Peregrine Falcon',
-    sci: 'Falco peregrinus',
-    family: 'Falconidae',
-    hatch: 'Fledges at 6 weeks old',
-    life: '15–20 years in the wild',
-    wing: '100–110 cm (39–43 in)',
-    habitat: 'Cliffs, coastlines, and skyscraper ledges — nearly every continent',
-    diet: 'Birds, taken mid-air in a stoop',
-    status: 'lc',
-    statusText: 'Least Concern',
-    call: 'A sharp, rapid "kek-kek-kek" alarm near the nest',
-    stat: 'TOP SPEED · 390 km/h dive',
-    notes: 'Treats a 40-storey ledge exactly like a cliff face. In its hunting stoop it is the fastest living animal on Earth — folding its wings and letting gravity do the work.',
-    color: '#C99A3E',
-    svg: `<svg viewBox="0 0 120 120"><path d="M60 20 C50 30 20 40 5 55 C25 50 45 48 55 55 C50 65 45 85 40 100 C55 90 62 78 65 62 C70 78 78 90 90 100 C88 85 82 65 78 55 C88 48 100 50 115 55 C100 40 70 30 60 20Z" fill="#C99A3E" opacity="0.9"/><circle cx="60" cy="34" r="4" fill="#2A2118"/></svg>`
+    tag: 'budgie',
+    name: 'Grey/White',
+    sci: null,
+    family: null,
+    hatch: 'March 12, 2025',
+    life: '7-12 years',
+    wing: '25-30 cm',
+    habitat: 'Spacious flight cage with natural perches, food and water bowls, and toys',
+    diet: 'Budgie seed mix or formulated pellets, leafy greens, and safe vegetables',
+    status: null,
+    statusText: null,
+    call: 'Soft chirping, tweeting, and contact calls',
+    stat: null,
+    notes: null,
+    color: '#858585',
+    svg: birdSvg
   },
   {
     id: 2,
-    tag: 'tropical',
-    name: 'Scarlet Macaw',
-    sci: 'Ara macao',
-    family: 'Psittacidae',
-    hatch: 'Leaves the nest around 3 months old',
-    life: '40–50 years, some past 75',
-    wing: '~110 cm (43 in)',
-    habitat: 'Lowland rainforest canopy, Central &amp; South America',
-    diet: 'Fruit, nuts, seeds, and mineral-rich clay',
-    status: 'lc',
-    statusText: 'Least Concern (regionally threatened)',
-    call: 'A loud, raucous screech; skilled mimic in captivity',
-    stat: 'BONDS · Mates for life',
-    notes: 'Visits riverbank clay licks in flocks — the minerals neutralize toxins in the unripe fruit that makes up much of its diet.',
-    color: '#B1502F',
-    svg: `<svg viewBox="0 0 120 120"><path d="M55 15 Q40 25 42 45 Q30 60 20 100 Q35 90 45 65 Q50 80 48 105 Q60 90 58 60 Q65 80 68 105 Q78 85 70 60 Q85 50 100 40 Q78 38 62 42 Q58 25 55 15Z" fill="#B1502F"/><circle cx="52" cy="30" r="3.5" fill="#2A2118"/></svg>`
+    tag: 'budgie',
+    name: 'Pale Yellow Budgies',
+    sci: null,
+    family: null,
+    hatch: 'April 5, 2025',
+    life: '7-12 years',
+    wing: '25-30 cm',
+    habitat: 'Spacious flight cage with natural perches, food and water bowls, and toys',
+    diet: 'Budgie seed mix or formulated pellets, leafy greens, and safe vegetables',
+    status: null,
+    statusText: null,
+    call: 'Soft chirping, tweeting, and contact calls',
+    stat: null,
+    notes: null,
+    color: '#E8D98D',
+    svg: birdSvg
   },
   {
     id: 3,
-    tag: 'water',
-    name: 'Snowy Owl',
-    sci: 'Bubo scandiacus',
-    family: 'Strigidae',
-    hatch: 'Hatches after ~32 days incubation',
-    life: '~10 years wild (28 recorded in care)',
-    wing: '125–150 cm (4.2–4.9 ft)',
-    habitat: 'Arctic tundra; winters across open farmland and coasts',
-    diet: 'Lemmings and other small mammals, sometimes birds',
-    status: 'vu',
-    statusText: 'Vulnerable',
-    call: 'A deep, hoarse hooting bark, carried far over open ground',
-    stat: 'HUNTS · By daylight, unlike most owls',
-    notes: 'Feathers grow whiter with every year of age. Because Arctic summers never fully darken, this owl hunts at all hours — a habit that carries into its winter range.',
+    tag: 'budgie',
+    name: 'Lutino Yellow',
+    sci: null,
+    family: null,
+    hatch: 'January 20, 2025',
+    life: '7-12 years',
+    wing: '25-30 cm',
+    habitat: 'Secure flight cage with horizontal bars, perches, toys, and room to move',
+    diet: 'Quality budgie seed mix or pellets, leafy greens, carrots, and clean drinking water',
+    status: null,
+    statusText: null,
+    call: 'Cheerful chirps, whistles, and short chatter',
+    stat: null,
+    notes: null,
     color: '#EFC873',
-    svg: `<svg viewBox="0 0 120 120"><ellipse cx="60" cy="60" rx="38" ry="42" fill="#EFC873"/><circle cx="46" cy="52" r="9" fill="#2A2118"/><circle cx="74" cy="52" r="9" fill="#2A2118"/><path d="M60 60 L54 70 L66 70Z" fill="#B1502F"/></svg>`
+    svg: birdSvg
   },
   {
     id: 4,
-    tag: 'raptor',
-    name: 'Bald Eagle',
-    sci: 'Haliaeetus leucocephalus',
-    family: 'Accipitridae',
-    hatch: 'First flight at 10–12 weeks old',
-    life: '20–30 years in the wild',
-    wing: '180–230 cm (6–7.5 ft)',
-    habitat: 'Rivers, lakes, and coastlines across North America',
-    diet: "Mainly fish, snatched from the water's surface",
-    status: 'lc',
-    statusText: 'Least Concern (recovered)',
-    call: 'A surprisingly thin, high chirping whistle',
-    stat: 'NEST WEIGHT · Up to 2,700 kg',
-    notes: 'Builds the largest tree nest of any North American bird, adding to the same nest year after year until branches groan under its weight.',
+    tag: 'budgie',
+    name: 'Green Budgies',
+    sci: null,
+    family: null,
+    hatch: 'February 14, 2025',
+    life: '7-12 years',
+    wing: '25-30 cm',
+    habitat: 'Secure flight cage with horizontal bars, perches, toys, and room to move',
+    diet: 'Quality budgie seed mix or pellets, leafy greens, carrots, and clean drinking water',
+    status: null,
+    statusText: null,
+    call: 'Cheerful chirps, whistles, and short chatter',
+    stat: null,
+    notes: null,
     color: '#6E8F73',
-    svg: `<svg viewBox="0 0 120 120"><path d="M60 25 C40 35 10 45 5 60 C25 55 45 55 58 60 C55 75 50 90 45 105 C58 95 65 82 65 65 C65 82 72 95 85 105 C80 90 75 75 72 60 C85 55 105 55 125 60 C120 45 90 35 60 25Z" fill="#EEEEEE"/><path d="M55 30 Q60 45 65 30" fill="none"/><ellipse cx="60" cy="35" rx="7" ry="9" fill="#EEEEEE"/><path d="M56 36 L60 42 L64 36Z" fill="#C99A3E"/></svg>`
+    svg: birdSvg
   },
   {
     id: 5,
-    tag: 'tropical',
-    name: 'Ruby-throated Hummingbird',
-    sci: 'Archilochus colubris',
-    family: 'Trochilidae',
-    hatch: 'Leaves the nest at 18–22 days old',
-    life: '3–5 years, occasionally longer',
-    wing: '~11 cm (4.3 in)',
-    habitat: 'Gardens and forest edges, eastern North America',
-    diet: 'Flower nectar and small soft-bodied insects',
-    status: 'lc',
-    statusText: 'Least Concern',
-    call: 'A thin, high-pitched chip; wings hum near 50 beats/second',
-    stat: 'MIGRATION · 800 km non-stop over open sea',
-    notes: 'Crosses the Gulf of Mexico in a single flight with no rest stop, having roughly doubled its body weight beforehand to fuel the crossing. Heart rate can reach 1,200 bpm mid-flight.',
-    color: '#B1502F',
-    svg: `<svg viewBox="0 0 120 120"><ellipse cx="55" cy="60" rx="14" ry="9" fill="#6E8F73"/><path d="M40 60 L15 55" stroke="#2A2118" stroke-width="2"/><path d="M65 55 Q90 30 100 15" stroke="#6E8F73" stroke-width="6" fill="none" stroke-linecap="round"/><path d="M65 65 Q90 90 100 105" stroke="#6E8F73" stroke-width="6" fill="none" stroke-linecap="round" opacity="0.6"/></svg>`
+    tag: 'budgie',
+    name: 'Blue/Violet Budgie',
+    sci: null,
+    family: null,
+    hatch: 'May 8, 2025',
+    life: '7-12 years',
+    wing: '25-30 cm',
+    habitat: 'Flight cage with natural wood perches, enrichment toys, and daily opportunities for safe exercise',
+    diet: 'Budgie pellets or seed mix, leafy vegetables, and occasional safe fruit',
+    status: null,
+    statusText: null,
+    call: 'High-pitched chirping, whistles, and flock contact calls',
+    stat: null,
+    notes: null,
+    color: '#7777A8',
+    svg: birdSvg
   },
   {
     id: 6,
-    tag: 'water',
-    name: 'Emperor Penguin',
-    sci: 'Aptenodytes forsteri',
-    family: 'Spheniscidae',
-    hatch: "Egg incubated on the father's feet, ~65 days",
-    life: '15–20 years',
-    wing: 'Flipper span ~35 cm (flightless)',
-    habitat: 'Antarctic sea ice and surrounding open water',
-    diet: 'Fish, krill, and squid, caught on deep dives',
-    status: 'nt',
-    statusText: 'Near Threatened',
-    call: 'A low, individually distinct trumpeting song for mate and chick recognition',
-    stat: 'FAST · Fathers fast up to 4 months',
-    notes: 'While the egg balances on his feet through the polar winter, the father eats nothing at all — surviving on stored fat alone until the mother returns from the sea.',
-    color: '#A9C0B6',
-    svg: `<svg viewBox="0 0 120 120"><ellipse cx="60" cy="70" rx="26" ry="38" fill="#2A2118"/><ellipse cx="60" cy="78" rx="15" ry="28" fill="#F3E8C9"/><circle cx="60" cy="35" r="16" fill="#2A2118"/><path d="M56 38 L48 42 L56 44Z" fill="#C99A3E"/></svg>`
+    tag: 'budgie',
+    name: 'Yellow Lutino Budgie',
+    sci: null,
+    family: null,
+    hatch: 'June 18, 2025',
+    life: '7-12 years',
+    wing: '25-30 cm',
+    habitat: 'Spacious cage with perches at different heights, toys, and a shaded resting area',
+    diet: 'Budgie seed mix or pellets, fresh greens, and safe vegetables',
+    status: null,
+    statusText: null,
+    call: 'Light chirping, squeaks, and melodic whistles',
+    stat: null,
+    notes: null,
+    color: '#EFC873',
+    svg: birdSvg
   },
   {
     id: 7,
-    tag: 'water',
-    name: 'Common Kingfisher',
-    sci: 'Alcedo atthis',
-    family: 'Alcedinidae',
-    hatch: 'Fledges at 23–27 days old',
-    life: '~2 years average (up to 15 recorded)',
-    wing: '24–26 cm (9–10 in)',
-    habitat: 'Still and slow rivers across Europe, Asia, and North Africa',
-    diet: 'Small fish and aquatic insects, taken in a vertical dive',
-    status: 'lc',
-    statusText: 'Least Concern',
-    call: 'A bright, sharp "tsee" whistled in flight',
-    stat: 'DIVE · Enters water at ~40 km/h',
-    notes: "A transparent third eyelid shields its eyes the instant it hits the water. Its beak shape — cutting the surface with almost no splash — is said to have inspired the nose of Japan's bullet train.",
-    color: '#6E8F73',
-    svg: `<svg viewBox="0 0 120 120"><ellipse cx="65" cy="60" rx="24" ry="17" fill="#6E8F73"/><path d="M45 55 L15 50 L45 62Z" fill="#C99A3E"/><circle cx="80" cy="52" r="4" fill="#2A2118"/><path d="M55 75 Q60 95 65 100" stroke="#2A2118" stroke-width="2" fill="none"/></svg>`
+    tag: 'budgie',
+    name: 'Yellow Lutino (Pair record)',
+    sci: null,
+    family: null,
+    hatch: 'November 22, 2024',
+    life: '7-12 years',
+    wing: '25-30 cm',
+    habitat: 'Flight cage with multiple perches, enrichment toys, and separate feeding spaces',
+    diet: 'Balanced budgie seed mix or pellets, leafy greens, vegetables, and fresh water',
+    status: null,
+    statusText: null,
+    call: 'Chirping, whistles, and social chatter',
+    stat: null,
+    notes: null,
+    color: '#EFC873',
+    svg: birdSvg
   },
   {
     id: 8,
-    tag: 'water',
-    name: 'Atlantic Puffin',
-    sci: 'Fratercula arctica',
-    family: 'Alcidae',
-    hatch: 'Fledges at 38–44 days, alone, at night',
-    life: '~20 years',
-    wing: '47–63 cm (18.5–25 in)',
-    habitat: 'North Atlantic sea cliffs and open ocean',
-    diet: 'Small fish such as sand eels and herring',
-    status: 'vu',
-    statusText: 'Vulnerable',
-    call: 'A low, growling "arr" from inside the burrow',
-    stat: 'CARRY · 10+ fish crosswise in one beak',
-    notes: 'Backward-hinged spines on its tongue and palate let it grip additional fish while still holding the last, so it can keep fishing after a catch. It effectively "flies" underwater on stubby wings.',
-    color: '#B1502F',
-    svg: `<svg viewBox="0 0 120 120"><ellipse cx="60" cy="70" rx="24" ry="32" fill="#2A2118"/><ellipse cx="60" cy="80" rx="13" ry="20" fill="#F3E8C9"/><path d="M50 55 L35 50 L50 62Z" fill="#B1502F"/><path d="M50 58 L35 55 L50 65Z" fill="#EFC873"/><circle cx="60" cy="45" r="12" fill="#2A2118"/></svg>`
+    tag: 'budgie',
+    name: 'Blue (Pair record)',
+    sci: null,
+    family: null,
+    hatch: 'December 10, 2024',
+    life: '7-12 years',
+    wing: '25-30 cm',
+    habitat: 'Flight cage with multiple perches, enrichment toys, and separate feeding spaces',
+    diet: 'Balanced budgie seed mix or pellets, leafy greens, vegetables, and fresh water',
+    status: null,
+    statusText: null,
+    call: 'Chirping, whistles, and social chatter',
+    stat: null,
+    notes: null,
+    color: '#667FAD',
+    svg: birdSvg
   },
   {
     id: 9,
-    tag: 'raptor',
-    name: 'Wandering Albatross',
-    sci: 'Diomedea exulans',
-    family: 'Diomedeidae',
-    hatch: 'Fledges at ~9 months — longest of any bird',
-    life: '50+ years',
-    wing: 'up to 3.5 m (11.5 ft) — largest of any living bird',
-    habitat: 'The Southern Ocean, circling the globe',
-    diet: 'Squid, fish, and scavenged carrion at the surface',
-    status: 'vu',
-    statusText: 'Vulnerable',
-    call: 'Largely silent at sea; bill-clacking and braying during courtship on land',
-    stat: 'GLIDE · 500+ km a day, wings barely moving',
-    notes: 'Rides wind gradients off the ocean surface in a technique called dynamic soaring, allowing it to glide for hours — sometimes days — without a single wingbeat.',
-    color: '#A9C0B6',
-    svg: `<svg viewBox="0 0 120 120"><path d="M60 55 C20 45 5 30 2 20 C15 35 35 45 58 50 C62 45 65 40 60 30 C68 38 70 48 65 55 C88 45 105 35 118 20 C115 30 100 45 60 55Z" fill="#A9C0B6"/><circle cx="60" cy="60" r="5" fill="#2A2118"/></svg>`
+    tag: 'lovebird',
+    name: 'Blue Lovebirds',
+    sci: null,
+    family: null,
+    hatch: 'July 19, 2025',
+    life: '10-15 years',
+    wing: '24-28 cm',
+    habitat: 'Secure cage with sturdy perches, chew toys, and space for climbing and flapping',
+    diet: 'Lovebird pellets or a balanced seed mix, leafy greens, safe vegetables, and clean water',
+    status: null,
+    statusText: null,
+    call: 'Loud chirps, squeaks, and short squawks',
+    stat: null,
+    notes: null,
+    color: '#52799D',
+    svg: birdSvg
   }
 ];
 
 const grid = document.getElementById('grid');
+const search = document.getElementById('search');
+const chips = document.querySelectorAll('.chip');
+
+function hasValue(value) {
+  return value !== null && value !== undefined && value !== '';
+}
+
+function createTextElement(tagName, className, value) {
+  const element = document.createElement(tagName);
+  element.className = className;
+  element.textContent = String(value);
+  return element;
+}
+
+function appendOptionalText(parent, tagName, className, value) {
+  if (!hasValue(value)) return null;
+  const element = createTextElement(tagName, className, value);
+  parent.appendChild(element);
+  return element;
+}
 
 function renderCards(list) {
-  grid.innerHTML = '';
+  grid.replaceChildren();
 
-  list.forEach((b, i) => {
+  list.forEach((bird, index) => {
     const card = document.createElement('div');
     card.className = 'card';
-    card.style.animationDelay = (i * 0.06) + 's';
+    card.style.animationDelay = `${index * 0.06}s`;
 
-    card.innerHTML = `
-      <div class="specimen-no">
-        <span>SPECIMEN NO. 0${b.id}</span>
-        <span>${b.family.toUpperCase()}</span>
-      </div>
+    const specimen = document.createElement('div');
+    specimen.className = 'specimen-no';
+    specimen.appendChild(createTextElement('span', '', `SPECIMEN NO. ${String(bird.id).padStart(2, '0')}`));
+    specimen.appendChild(createTextElement('span', '', bird.tag.toUpperCase()));
+    card.appendChild(specimen);
 
-      <div class="card-illus">${b.svg}</div>
-      <h3 class="card-name">${b.name}</h3>
-      <p class="card-sci">${b.sci}</p>
-      <div class="card-stat">${b.stat}</div>
-      <div class="card-tap">Open Dossier →</div>
-    `;
+    const illustration = document.createElement('div');
+    illustration.className = 'card-illus';
+    illustration.appendChild(bird.svg(bird.color));
+    card.appendChild(illustration);
 
-    card.addEventListener('click', () => openDossier(b));
+    card.appendChild(createTextElement('h3', 'card-name', bird.name));
+    appendOptionalText(card, 'p', 'card-sci', bird.sci);
+    appendOptionalText(card, 'div', 'card-stat', bird.stat);
+    card.appendChild(createTextElement('div', 'card-tap', 'Open Dossier →'));
+
+    card.addEventListener('click', () => openDossier(bird));
     grid.appendChild(card);
-
     requestAnimationFrame(() => card.classList.add('reveal'));
   });
 }
@@ -206,19 +259,17 @@ renderCards(birds);
 
 // ---- Filters ----
 
-const search = document.getElementById('search');
-const chips = document.querySelectorAll('.chip');
-
 let activeFilter = 'all';
 
 function applyFilters() {
-  const q = search.value.trim().toLowerCase();
-
-  const list = birds.filter(b => {
-    const matchesTag = activeFilter === 'all' || b.tag === activeFilter;
-    const matchesQ = !q || (b.name + b.sci + b.family + b.habitat).toLowerCase().includes(q);
-
-    return matchesTag && matchesQ;
+  const query = search.value.trim().toLowerCase();
+  const list = birds.filter((bird) => {
+    const matchesTag = activeFilter === 'all' || bird.tag === activeFilter;
+    const searchableValues = [bird.name, bird.sci, bird.family, bird.habitat]
+      .filter(hasValue)
+      .join(' ')
+      .toLowerCase();
+    return matchesTag && (!query || searchableValues.includes(query));
   });
 
   renderCards(list);
@@ -226,12 +277,11 @@ function applyFilters() {
 
 search.addEventListener('input', applyFilters);
 
-chips.forEach(c => {
-  c.addEventListener('click', () => {
-    chips.forEach(x => x.classList.remove('active'));
-    c.classList.add('active');
-
-    activeFilter = c.dataset.f;
+chips.forEach((chip) => {
+  chip.addEventListener('click', () => {
+    chips.forEach((item) => item.classList.remove('active'));
+    chip.classList.add('active');
+    activeFilter = chip.dataset.f;
     applyFilters();
   });
 });
@@ -246,43 +296,57 @@ const dFields = document.getElementById('dFields');
 const dNotes = document.getElementById('dNotes');
 const stamp = document.getElementById('stamp');
 
-function statusClass(s) {
-  return s === 'lc' ? 'status-lc' : s === 'nt' ? 'status-nt' : 'status-vu';
+function statusClass(status) {
+  return status === 'lc' ? 'status-lc' : status === 'nt' ? 'status-nt' : 'status-vu';
 }
 
-function openDossier(b) {
-  dName.textContent = b.name;
-  dSci.textContent = b.sci + ' · ' + b.family;
-  dIllus.innerHTML = b.svg;
+function appendDossierField(label, value, className = 'field') {
+  if (!hasValue(value)) return null;
+  const field = document.createElement('div');
+  field.className = className;
+  field.appendChild(createTextElement('div', 'field-label', label));
+  field.appendChild(createTextElement('div', 'field-val', value));
+  dFields.appendChild(field);
+  return field;
+}
 
-  const fieldData = [
-    ['Hatched', b.hatch],
-    ['Typical Lifespan', b.life],
-    ['Wingspan', b.wing],
-    ['Habitat', b.habitat],
-    ['Diet', b.diet],
-    ['Call', b.call]
-  ];
+function openDossier(bird) {
+  dName.textContent = bird.name;
+  const identity = [bird.sci, bird.family].filter(hasValue).join(' · ');
+  dSci.textContent = identity;
+  dSci.hidden = !identity;
 
-  dFields.innerHTML = fieldData.map(([label, val]) => `
-    <div class="field">
-      <div class="field-label">${label}</div>
-      <div class="field-val">${val}</div>
-    </div>
-  `).join('') + `
-    <div class="field full">
-      <div class="field-label">Conservation Status</div>
-      <div class="field-val">
-        <span class="status-tag ${statusClass(b.status)}">${b.statusText}</span>
-      </div>
-    </div>
-  `;
+  dIllus.replaceChildren(bird.svg(bird.color));
+  dFields.replaceChildren();
+  [
+    ['Hatched', bird.hatch],
+    ['Typical Lifespan', bird.life],
+    ['Wingspan', bird.wing],
+    ['Habitat', bird.habitat],
+    ['Diet', bird.diet],
+    ['Call', bird.call]
+  ].forEach(([label, value]) => appendDossierField(label, value));
 
-  dNotes.innerHTML = `
-    <div class="field-label" style="margin-bottom:8px;">Field Notes</div>
-    ${b.notes}
-  `;
+  if (hasValue(bird.statusText)) {
+    const field = document.createElement('div');
+    field.className = 'field full';
+    field.appendChild(createTextElement('div', 'field-label', 'Conservation Status'));
+    const value = createTextElement('span', `status-tag ${statusClass(bird.status)}`, bird.statusText);
+    const valueContainer = document.createElement('div');
+    valueContainer.className = 'field-val';
+    valueContainer.appendChild(value);
+    field.appendChild(valueContainer);
+    dFields.appendChild(field);
+  }
 
+  dNotes.replaceChildren();
+  if (hasValue(bird.notes)) {
+    dNotes.appendChild(createTextElement('div', 'field-label', 'Field Notes'));
+    dNotes.appendChild(document.createTextNode(bird.notes));
+    dNotes.hidden = false;
+  } else {
+    dNotes.hidden = true;
+  }
   dNotes.classList.remove('show');
 
   stamp.style.animation = 'none';
@@ -292,17 +356,15 @@ function openDossier(b) {
   scrim.classList.add('open');
   document.body.style.overflow = 'hidden';
 
-  // Staggered reveal
-  const fieldEls = dFields.querySelectorAll('.field');
-
-  fieldEls.forEach((el, i) => {
-    el.classList.remove('show');
-    setTimeout(() => el.classList.add('show'), 500 + i * 110);
+  const fieldElements = dFields.querySelectorAll('.field');
+  fieldElements.forEach((element, index) => {
+    element.classList.remove('show');
+    setTimeout(() => element.classList.add('show'), 500 + index * 110);
   });
 
-  setTimeout(() => {
-    dNotes.classList.add('show');
-  }, 500 + fieldEls.length * 110 + 150);
+  if (hasValue(bird.notes)) {
+    setTimeout(() => dNotes.classList.add('show'), 500 + fieldElements.length * 110 + 150);
+  }
 }
 
 function closeDossier() {
@@ -312,41 +374,40 @@ function closeDossier() {
 
 document.getElementById('closeBtn').addEventListener('click', closeDossier);
 
-scrim.addEventListener('click', (e) => {
-  if (e.target === scrim) closeDossier();
+scrim.addEventListener('click', (event) => {
+  if (event.target === scrim) closeDossier();
 });
 
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') closeDossier();
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape') closeDossier();
 });
 
 // ---- Flying flock in hero ----
 
 const flockEl = document.getElementById('flock');
+const svgNamespace = 'http://www.w3.org/2000/svg';
 
-const flockSVG = `
-  <svg viewBox="0 0 60 30" fill="#EFC873">
-    <path d="M0 15 Q15 0 30 15 Q45 0 60 15 Q45 12 30 20 Q15 12 0 15Z"/>
-  </svg>
-`;
+function createFlockSvg() {
+  const svg = document.createElementNS(svgNamespace, 'svg');
+  svg.setAttribute('viewBox', '0 0 60 30');
+  svg.setAttribute('fill', '#EFC873');
+  const path = document.createElementNS(svgNamespace, 'path');
+  path.setAttribute('d', 'M0 15 Q15 0 30 15 Q45 0 60 15 Q45 12 30 20 Q15 12 0 15Z');
+  svg.appendChild(path);
+  return svg;
+}
 
 function spawnBird() {
-  const el = document.createElement('div');
-  el.innerHTML = flockSVG;
-
-  const svg = el.firstElementChild;
-
+  const svg = createFlockSvg();
   svg.style.animation = `flyAcross ${5 + Math.random() * 3}s linear forwards`;
-  svg.style.top = (10 + Math.random() * 50) + '%';
-
+  svg.style.top = `${10 + Math.random() * 50}%`;
   flockEl.appendChild(svg);
-
   setTimeout(() => svg.remove(), 9000);
 }
 
 if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-  for (let i = 0; i < 5; i++) {
-    setTimeout(spawnBird, i * 450);
+  for (let index = 0; index < 5; index += 1) {
+    setTimeout(spawnBird, index * 450);
   }
 
   setInterval(() => {
@@ -356,29 +417,27 @@ if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
 
 // ---- Magnetic tilt on cards ----
 
-document.addEventListener('mousemove', (e) => {
-  document.querySelectorAll('.card').forEach(card => {
-    const r = card.getBoundingClientRect();
-
+document.addEventListener('mousemove', (event) => {
+  document.querySelectorAll('.card').forEach((card) => {
+    const rect = card.getBoundingClientRect();
     if (
-      e.clientX < r.left - 40 ||
-      e.clientX > r.right + 40 ||
-      e.clientY < r.top - 40 ||
-      e.clientY > r.bottom + 40
+      event.clientX < rect.left - 40 ||
+      event.clientX > rect.right + 40 ||
+      event.clientY < rect.top - 40 ||
+      event.clientY > rect.bottom + 40
     ) {
       return;
     }
 
-    const px = (e.clientX - r.left) / r.width - 0.5;
-    const py = (e.clientY - r.top) / r.height - 0.5;
-
+    const px = (event.clientX - rect.left) / rect.width - 0.5;
+    const py = (event.clientY - rect.top) / rect.height - 0.5;
     card.style.transform =
       `perspective(700px) rotateX(${py * -6}deg) rotateY(${px * 6}deg) translateY(-2px)`;
   });
 });
 
 document.addEventListener('mouseleave', () => {
-  document.querySelectorAll('.card').forEach(c => {
-    c.style.transform = '';
+  document.querySelectorAll('.card').forEach((card) => {
+    card.style.transform = '';
   });
 });

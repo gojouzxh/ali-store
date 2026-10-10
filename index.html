@@ -27,12 +27,28 @@
 
   <section class="hero">
     <div class="flock" id="flock"></div>
-    <div class="hero-eyebrow">Vol. I — A Living Catalog</div>
-    <h1 class="hero-title">Every bird<br>has a <em>dossier.</em></h1>
-    <p class="hero-sub">
-      Nine bird records for APM Aviary. Tap a card to view its hatch date, lifespan, wingspan, habitat, diet, and call.
-    </p>
-    <div class="hero-line"></div>
+    <div class="hero-layout">
+      <div class="hero-copy">
+        <div class="hero-eyebrow">Vol. I — A Living Catalog</div>
+        <h1 class="hero-title">Every bird<br>has a <em>dossier.</em></h1>
+        <p class="hero-sub">
+          Nine bird records for APM Aviary. Tap a card to view its hatch date, lifespan, wingspan, habitat, diet, and call.
+        </p>
+        <div class="hero-line"></div>
+      </div>
+      <div class="hero-logo-column">
+        <div class="hero-logo-backdrop">
+          <img
+            class="hero-logo"
+            src="images/apm-logo.png"
+            alt="APM Aviary - Locally Bred Birds"
+            width="480"
+            height="480"
+            onerror="this.hidden = true; this.parentElement.hidden = true"
+          >
+        </div>
+      </div>
+    </div>
   </section>
 
   <div class="rail">
@@ -60,7 +76,7 @@
       <div class="stamp" id="stamp">EXAMINED</div>
 
       <div class="dossier-head">
-        <div class="dossier-illus" id="dIllus"></div>
+        <div class="dossier-illus" id="dPhoto"></div>
         <div>
           <h2 class="dossier-name" id="dName"></h2>
           <div class="dossier-sci" id="dSci"></div>

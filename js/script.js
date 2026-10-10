@@ -1,34 +1,3 @@
-const birdSvg = (color) => {
-  const namespace = 'http://www.w3.org/2000/svg';
-  const svg = document.createElementNS(namespace, 'svg');
-  svg.setAttribute('viewBox', '0 0 120 120');
-  svg.setAttribute('role', 'img');
-  svg.setAttribute('aria-hidden', 'true');
-
-  const body = document.createElementNS(namespace, 'path');
-  body.setAttribute(
-    'd',
-    'M23 69c0-18 15-32 35-32 10 0 18 4 24 10l20-5-11 14c2 4 3 8 3 13 0 19-16 34-37 34-16 0-29-9-34-22L9 93l10-23-8-18 22 10c-3 2-6 4-10 7Z'
-  );
-  body.setAttribute('fill', color);
-
-  const wing = document.createElementNS(namespace, 'path');
-  wing.setAttribute('d', 'M36 70c13-13 28-17 44-12-7 13-18 22-34 27');
-  wing.setAttribute('fill', 'none');
-  wing.setAttribute('stroke', 'rgba(42,33,24,0.35)');
-  wing.setAttribute('stroke-width', '4');
-  wing.setAttribute('stroke-linecap', 'round');
-
-  const eye = document.createElementNS(namespace, 'circle');
-  eye.setAttribute('cx', '79');
-  eye.setAttribute('cy', '51');
-  eye.setAttribute('r', '2.5');
-  eye.setAttribute('fill', '#2A2118');
-
-  svg.append(body, wing, eye);
-  return svg;
-};
-
 const birds = [
   {
     id: 1,
@@ -46,8 +15,8 @@ const birds = [
     call: 'Soft chirping, tweeting, and contact calls',
     stat: null,
     notes: null,
-    color: '#858585',
-    svg: birdSvg
+    photo: 'images/bird-01.jpg',
+    photoAlt: 'Grey and white budgie'
   },
   {
     id: 2,
@@ -65,8 +34,8 @@ const birds = [
     call: 'Soft chirping, tweeting, and contact calls',
     stat: null,
     notes: null,
-    color: '#E8D98D',
-    svg: birdSvg
+    photo: 'images/bird-02.jpg',
+    photoAlt: 'Pale yellow budgies'
   },
   {
     id: 3,
@@ -84,8 +53,8 @@ const birds = [
     call: 'Cheerful chirps, whistles, and short chatter',
     stat: null,
     notes: null,
-    color: '#EFC873',
-    svg: birdSvg
+    photo: 'images/bird-03.jpg',
+    photoAlt: 'Yellow lutino budgie'
   },
   {
     id: 4,
@@ -103,8 +72,8 @@ const birds = [
     call: 'Cheerful chirps, whistles, and short chatter',
     stat: null,
     notes: null,
-    color: '#6E8F73',
-    svg: birdSvg
+    photo: 'images/bird-04.jpg',
+    photoAlt: 'Green budgies'
   },
   {
     id: 5,
@@ -122,8 +91,8 @@ const birds = [
     call: 'High-pitched chirping, whistles, and flock contact calls',
     stat: null,
     notes: null,
-    color: '#7777A8',
-    svg: birdSvg
+    photo: 'images/bird-05.jpg',
+    photoAlt: 'Blue and violet budgie'
   },
   {
     id: 6,
@@ -141,8 +110,8 @@ const birds = [
     call: 'Light chirping, squeaks, and melodic whistles',
     stat: null,
     notes: null,
-    color: '#EFC873',
-    svg: birdSvg
+    photo: 'images/bird-06.jpg',
+    photoAlt: 'Yellow lutino budgie'
   },
   {
     id: 7,
@@ -160,8 +129,8 @@ const birds = [
     call: 'Chirping, whistles, and social chatter',
     stat: null,
     notes: null,
-    color: '#EFC873',
-    svg: birdSvg
+    photo: 'images/bird-07.jpg',
+    photoAlt: 'Yellow lutino budgie pair'
   },
   {
     id: 8,
@@ -179,8 +148,8 @@ const birds = [
     call: 'Chirping, whistles, and social chatter',
     stat: null,
     notes: null,
-    color: '#667FAD',
-    svg: birdSvg
+    photo: 'images/bird-08.jpg',
+    photoAlt: 'Blue budgie pair'
   },
   {
     id: 9,
@@ -198,8 +167,8 @@ const birds = [
     call: 'Loud chirps, squeaks, and short squawks',
     stat: null,
     notes: null,
-    color: '#52799D',
-    svg: birdSvg
+    photo: 'images/bird-09.jpg',
+    photoAlt: 'Blue lovebirds'
   }
 ];
 
@@ -225,6 +194,36 @@ function appendOptionalText(parent, tagName, className, value) {
   return element;
 }
 
+function createPhotoFrame(photo, photoAlt, className) {
+  const frame = document.createElement('div');
+  frame.className = className;
+
+  const image = document.createElement('img');
+  image.className = 'bird-photo';
+  image.alt = hasValue(photoAlt) ? photoAlt : '';
+  image.loading = 'lazy';
+
+  const placeholder = document.createElement('div');
+  placeholder.className = 'photo-placeholder';
+  placeholder.textContent = 'Photo unavailable';
+  placeholder.hidden = true;
+
+  image.onerror = () => {
+    image.hidden = true;
+    placeholder.hidden = false;
+  };
+
+  if (hasValue(photo)) {
+    image.src = photo;
+  } else {
+    image.hidden = true;
+    placeholder.hidden = false;
+  }
+
+  frame.append(image, placeholder);
+  return frame;
+}
+
 function renderCards(list) {
   grid.replaceChildren();
 
@@ -239,10 +238,7 @@ function renderCards(list) {
     specimen.appendChild(createTextElement('span', '', bird.tag.toUpperCase()));
     card.appendChild(specimen);
 
-    const illustration = document.createElement('div');
-    illustration.className = 'card-illus';
-    illustration.appendChild(bird.svg(bird.color));
-    card.appendChild(illustration);
+    card.appendChild(createPhotoFrame(bird.photo, bird.photoAlt, 'card-illus'));
 
     card.appendChild(createTextElement('h3', 'card-name', bird.name));
     appendOptionalText(card, 'p', 'card-sci', bird.sci);
@@ -291,7 +287,7 @@ chips.forEach((chip) => {
 const scrim = document.getElementById('scrim');
 const dName = document.getElementById('dName');
 const dSci = document.getElementById('dSci');
-const dIllus = document.getElementById('dIllus');
+const dPhoto = document.getElementById('dPhoto');
 const dFields = document.getElementById('dFields');
 const dNotes = document.getElementById('dNotes');
 const stamp = document.getElementById('stamp');
@@ -316,7 +312,8 @@ function openDossier(bird) {
   dSci.textContent = identity;
   dSci.hidden = !identity;
 
-  dIllus.replaceChildren(bird.svg(bird.color));
+  const photoFrame = createPhotoFrame(bird.photo, bird.photoAlt, 'dossier-illus');
+  dPhoto.replaceChildren(...photoFrame.childNodes);
   dFields.replaceChildren();
   [
     ['Hatched', bird.hatch],

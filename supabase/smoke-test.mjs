@@ -185,6 +185,34 @@ async function createBird(staffToken, commonName, published) {
   return result[0].id;
 }
 
+async function createIncompleteDraft(staffToken, commonName) {
+  const response = await apiRequest('/rest/v1/birds?select=id', {
+    token: staffToken,
+    method: 'POST',
+    headers: { Prefer: 'return=representation' },
+    body: {
+      common_name: commonName,
+      scientific_name: null,
+      family: null,
+      category: null,
+      iucn_status: null,
+      source_note: null,
+      field_notes: null,
+      availability: null,
+      photo_alt: null,
+      is_approved: false,
+      is_published: false
+    }
+  });
+  requireOk(response, 'Staff incomplete draft insert');
+  const result = parseJson(response.text, 'Staff incomplete draft insert');
+  if (!Array.isArray(result) || typeof result[0]?.id !== 'string') {
+    throw new Error('Staff incomplete draft insert did not return the new bird ID.');
+  }
+  birdIds.add(result[0].id);
+  return result[0].id;
+}
+
 async function uploadPhoto(path, token) {
   return apiRequest(
     `/storage/v1/object/bird-photos/${path.split('/').map(encodeURIComponent).join('/')}`,
@@ -328,8 +356,10 @@ async function run() {
   let nonStaffUserId;
   let publishedBirdId;
   let unpublishedBirdId;
+  let incompleteBirdId;
   let publishedBirdName;
   let unpublishedBirdName;
+  let incompleteBirdName;
   let publishedPhotoPath;
   let unpublishedPhotoPath;
   let seedReady = false;
@@ -358,6 +388,7 @@ async function run() {
       const suffix = randomUUID();
       publishedBirdName = `Smoke Test Published ${suffix}`;
       unpublishedBirdName = `Smoke Test Unpublished ${suffix}`;
+      incompleteBirdName = `Smoke Test Incomplete ${suffix}`;
       publishedBirdId = await createBird(
         staffToken,
         publishedBirdName,
@@ -368,6 +399,7 @@ async function run() {
         unpublishedBirdName,
         false
       );
+      incompleteBirdId = await createIncompleteDraft(staffToken, incompleteBirdName);
 
       publishedPhotoPath = objectPath(publishedBirdId);
       unpublishedPhotoPath = objectPath(unpublishedBirdId);
@@ -398,8 +430,10 @@ async function run() {
         nonStaffUserId,
         publishedBirdId,
         unpublishedBirdId,
+        incompleteBirdId,
         publishedBirdName,
         unpublishedBirdName,
+        incompleteBirdName,
         publishedPhotoPath,
         unpublishedPhotoPath
       });
@@ -440,8 +474,10 @@ async function runAccessChecks({
   nonStaffUserId,
   publishedBirdId,
   unpublishedBirdId,
+  incompleteBirdId,
   publishedBirdName,
   unpublishedBirdName,
+  incompleteBirdName,
   publishedPhotoPath,
   unpublishedPhotoPath
 }) {
@@ -680,6 +716,84 @@ async function runAccessChecks({
       }
     );
     mustBeDenied(publicationResponse, 'Publish an unapproved test bird', ['23514']);
+
+    const incompletePublicationResponse = await apiRequest(
+      `/rest/v1/birds?id=eq.${encodeURIComponent(incompleteBirdId)}`,
+      {
+        token: staffToken,
+        method: 'PATCH',
+        headers: { Prefer: 'return=minimal' },
+        body: { is_approved: true, is_published: true }
+      }
+    );
+    mustBeDenied(
+      incompletePublicationResponse,
+      'Publish an incomplete bird',
+      ['23514']
+    );
+
+    const blankScientificNameResponse = await apiRequest('/rest/v1/birds?select=id', {
+      token: staffToken,
+      method: 'POST',
+      headers: { Prefer: 'return=representation' },
+      body: {
+        common_name: `Smoke Test Blank Scientific Name ${randomUUID()}`,
+        scientific_name: '',
+        family: 'Testidae',
+        category: 'tropical',
+        hatch_info: 'Test hatch information',
+        lifespan: 'Test lifespan',
+        wingspan: 'Test wingspan',
+        habitat: 'Test habitat',
+        diet: 'Test diet',
+        iucn_status: 'NE',
+        iucn_checked_at: '2025-01-01',
+        source_note: 'Smoke-test source',
+        call: 'Smoke-test call',
+        field_notes: 'Smoke-test field notes',
+        availability: 'sold',
+        quantity_available: 0,
+        photo_path: null,
+        photo_alt: 'Smoke-test photo description',
+        is_approved: true,
+        is_published: true,
+        sort_order: 9999
+      }
+    });
+    if (blankScientificNameResponse.ok) {
+      const insertedRows = parseJson(
+        blankScientificNameResponse.text,
+        'Insert published bird with blank scientific name'
+      );
+      if (Array.isArray(insertedRows)) {
+        for (const inserted of insertedRows) {
+          if (typeof inserted.id === 'string') {
+            birdIds.add(inserted.id);
+          }
+        }
+      }
+    }
+    mustBeDenied(
+      blankScientificNameResponse,
+      'Insert published bird with blank scientific name',
+      ['23514']
+    );
+
+    const incompleteRead = await apiRequest(
+      `/rest/v1/birds?select=common_name,is_approved,is_published&id=eq.${encodeURIComponent(incompleteBirdId)}`,
+      { token: staffToken }
+    );
+    requireOk(incompleteRead, 'Staff verify incomplete bird remains a draft');
+    const incompleteRows = parseJson(
+      incompleteRead.text,
+      'Staff verify incomplete bird remains a draft'
+    );
+    if (incompleteRows.length !== 1 ||
+        incompleteRows[0].common_name !== incompleteBirdName ||
+        incompleteRows[0].is_approved ||
+        incompleteRows[0].is_published) {
+      throw new Error('The incomplete bird changed after its publication was rejected.');
+    }
 
     const wrongPathResponse = await setPhotoPath(
       unpublishedBirdId,

@@ -22,8 +22,9 @@ in the app is not authorization.
 
 ## 2. Apply the database and storage migration
 
-Run `supabase/migrations/001_initial_schema.sql` in the Supabase SQL Editor.
-It creates:
+In a fresh project, run `supabase/migrations/001_initial_schema.sql` and then
+`supabase/migrations/002_allow_incomplete_drafts.sql` in the Supabase SQL
+Editor, in that order. The first migration creates:
 
 - `birds`, with species-level availability, optional quantity, IUCN metadata,
   photo path, and approval/publication flags. Both flags default to `false`.
@@ -52,6 +53,11 @@ It creates:
 - A constraint preventing a record from being published unless it is approved.
 - A photo-path constraint requiring any configured photo to be stored in the
   folder matching its bird row ID.
+
+The second migration makes the designated catalog fields nullable for
+unpublished drafts, requires those fields before publication, and requires
+photo alt text whenever a photo path is set. It does not alter RLS, the public
+view, helper functions, or Storage rules.
 
 The migration is written for a fresh project and is not idempotent. If it
 partly fails, do not blindly run it again; use a disposable project and reset
@@ -89,9 +95,11 @@ these public values separate from server-only keys. Never commit a secret key.
 `js/catalog-data.js` is an isolated browser data module for the planned public
 catalog. It reads only safe fields from `birds_public` and can request short-
 lived photo URLs. It sends the publishable key in the `apikey` header. It is
-not yet connected to `index.html`; the hard-coded demo catalog remains in
-`js/script.js` and is not safe to publish. Configure only the project URL and
-publishable key when the tested frontend switch is ready.
+not yet connected to `index.html`; the hard-coded demonstration catalog still
+remains in `js/script.js` and is not safe to publish. The real owner records
+are kept separately in `supabase/seeds/real_owner_birds_unpublished.sql`.
+Configure only the project URL and publishable key when the tested frontend
+switch is ready.
 
 The module also exports `formatAvailability(availability, quantityAvailable)`.
 For example, `formatAvailability('available', 2)` returns `Available (2)`.
@@ -134,15 +142,84 @@ requests fail. The public page must show only rows returned by the approved and
 published query. Do not print the QR code until that change is deployed and
 the client confirms the final URL.
 
+## Real owner bird data (unpublished)
+
+`supabase/seeds/real_owner_birds_unpublished.sql` records the nine real owner
+entries exactly as supplied. It maps each hatch date to `hatch_info`, keeps the
+specified wingspan text, preserves both pair labels in `common_name`, leaves
+`quantity_available` null, and explicitly sets `is_approved` and
+`is_published` to `false` for every row. No scientific names, families,
+categories, conservation data, field notes, availability, quantities, or
+photos have been inferred.
+
+**Do not run this seed after migration 001 alone.** Migration 001 declares
+`scientific_name`, `family`, `category`, `iucn_status`, `source_note`,
+`field_notes`, `availability`, and `photo_alt` as `NOT NULL`. The supplied
+owner data leaves those values null. First apply
+`supabase/migrations/001_initial_schema.sql`, then apply the additive
+`supabase/migrations/002_allow_incomplete_drafts.sql`, then run the seed once.
+The second migration permits those fields to be null on drafts but requires
+them before publication. `call` remains `NOT NULL` and is supplied for all
+nine records. No existing CHECK constraints, RLS, view, helper function, or
+Storage rule is changed. The seed application status is **Not run**.
+
+Existing `birds` CHECK constraints remain compatible with nullable drafts:
+
+- The category, IUCN status, and availability allow-list checks evaluate to
+  NULL for a NULL value; PostgreSQL CHECK constraints accept TRUE or NULL, so
+  these checks reject invalid non-NULL values but permit an unknown draft
+  value.
+- `quantity_available is null or quantity_available >= 0` explicitly permits
+  NULL and still rejects negative quantities.
+- `not is_published or is_approved` still requires approval for every
+  published record. Its flag columns remain NOT NULL.
+- `photo_path is null or split_part(photo_path, '/', 1) = id::text` still
+  permits a missing photo path and checks that any supplied path belongs to
+  its row.
+
+The new checks require all publication fields to be present, require
+`scientific_name` and `family` to be non-blank after trimming whitespace, and
+require `photo_alt` whenever `photo_path` is set. The real-owner seed has
+neither a photo path nor alt text, so it satisfies that photo check while
+remaining a draft. The seed is not idempotent; run it only once in the
+intended project.
+
+All nine records have these fields null:
+
+| Bird | Fields left null |
+|---|---|
+| 01 — Grey/White | `scientific_name`, `family`, `category`, `iucn_status`, `iucn_checked_at`, `source_note`, `field_notes`, `availability`, `quantity_available`, `photo_path`, `photo_alt` |
+| 02 — Pale Yellow Budgies | `scientific_name`, `family`, `category`, `iucn_status`, `iucn_checked_at`, `source_note`, `field_notes`, `availability`, `quantity_available`, `photo_path`, `photo_alt` |
+| 03 — Lutino Yellow | `scientific_name`, `family`, `category`, `iucn_status`, `iucn_checked_at`, `source_note`, `field_notes`, `availability`, `quantity_available`, `photo_path`, `photo_alt` |
+| 04 — Green Budgies | `scientific_name`, `family`, `category`, `iucn_status`, `iucn_checked_at`, `source_note`, `field_notes`, `availability`, `quantity_available`, `photo_path`, `photo_alt` |
+| 05 — Blue/Violet Budgie | `scientific_name`, `family`, `category`, `iucn_status`, `iucn_checked_at`, `source_note`, `field_notes`, `availability`, `quantity_available`, `photo_path`, `photo_alt` |
+| 06 — Yellow Lutino Budgie | `scientific_name`, `family`, `category`, `iucn_status`, `iucn_checked_at`, `source_note`, `field_notes`, `availability`, `quantity_available`, `photo_path`, `photo_alt` |
+| 07 — Yellow Lutino (Pair record) | `scientific_name`, `family`, `category`, `iucn_status`, `iucn_checked_at`, `source_note`, `field_notes`, `availability`, `quantity_available`, `photo_path`, `photo_alt` |
+| 08 — Blue (Pair record) | `scientific_name`, `family`, `category`, `iucn_status`, `iucn_checked_at`, `source_note`, `field_notes`, `availability`, `quantity_available`, `photo_path`, `photo_alt` |
+| 09 — Blue Lovebirds | `scientific_name`, `family`, `category`, `iucn_status`, `iucn_checked_at`, `source_note`, `field_notes`, `availability`, `quantity_available`, `photo_path`, `photo_alt` |
+
+The current filter categories are limited to `raptor`, `water`, and `tropical`.
+No category can be assigned from the supplied data without inference, so the
+category chips cannot filter these entries until the owner supplies categories.
+The current dossier layout expects scientific name/family, a conservation
+status, and field notes; it has not been adapted to these null values. Do not
+wire the data to the page until null display behavior is designed. The existing
+hard-coded demonstration array remains in `js/script.js` because this data-only
+change does not edit frontend code; this is not a fallback for the database and
+the prototype must remain undeployed.
+
 Before launch, prepare data and then test with at least two identities:
 
-1. Apply the migration in a fresh disposable Supabase project.
+1. Apply migrations 001 and 002, in order, in a fresh disposable Supabase
+   project.
 2. Create a staff Auth user in the dashboard and add its UUID to
    `staff_users`.
-3. As staff, create one approved/published and one unpublished bird, with a
-   test photo in each bird's ID folder.
+3. Run the real-owner seed once; migration 002 was already applied in step 1.
+   For security checks, as staff also create disposable test birds (including
+   one approved/published and one unpublished bird) with test photos in their
+   ID folders.
 4. Run the anonymous and non-staff checks below. The allow-listed staff setup
-   and seed actions (check 4) therefore happen before checks 1 and 2.
+   and disposable test-data actions happen before checks 1 and 2.
 
 - An anonymous visitor must see only rows where `is_approved` and
   `is_published` are both true, and must not be able to write rows or upload
@@ -159,12 +236,16 @@ Before launch, prepare data and then test with at least two identities:
 ## Pre-launch security test checklist
 
 These tests are **not run** until a Supabase project is configured and the
-migration is applied. Record actual results and evidence here; do not mark a
+migrations are applied. Record actual results and evidence here; do not mark a
 test passed based only on inspecting the policy SQL.
 
 | Check | How to test | Expected result | Result / date |
 |---|---|---|---|
-| Migration and RLS | Apply the migration in a test project. Run the SQL verification queries below in the SQL Editor. | RLS is enabled on both app tables and the expected table/storage policies exist. | Not run |
+| Migration and RLS | Apply migrations 001 and 002 in order in a test project. Run the SQL verification queries below in the SQL Editor. | RLS is enabled on both app tables and the expected table/storage policies exist. | Not run |
+| Real owner data seed | Apply migration 001, then migration 002, then run `supabase/seeds/real_owner_birds_unpublished.sql` once. Query the inserted owner rows. | Exactly nine owner records are inserted with both publication flags false and the supplied unspecified fields still NULL. | Not run |
+| Incomplete draft publication guard | As allow-listed staff, attempt to set both `is_approved=true` and `is_published=true` on an owner-data draft that still has NULL publication-required fields. | The update is rejected with PostgREST/PostgreSQL check-violation code `23514`; the row remains unapproved and unpublished. | Not run |
+| Blank scientific name publication guard | As allow-listed staff, insert a row with `is_approved=true`, `is_published=true`, `scientific_name=''`, and all other publication fields populated. | The insert is rejected with check-violation code `23514`. | Not run |
+| Complete record can publish | As allow-listed staff, create a row with `common_name`, `call`, and all publication-required fields populated; leave `photo_path` NULL or provide `photo_alt` with it. Set `is_approved=true` and `is_published=true`. | The insert/update succeeds, demonstrating complete data can still be published while the existing approval rule remains enforced. | Not run |
 | 1. Anonymous visitor | Use only the project's URL and publishable key. Query `birds_public?select=*` and confirm it contains only safe, approved, published fields. Try direct `birds?select=*`, REST `POST`, `PATCH`, and `DELETE` against a test row; attempt a Storage upload and create signed URLs for both unpublished and published photos. List files in the bucket and test paths with no folder, a non-UUID folder, and a valid UUID for a nonexistent bird. | The view returns only safe fields; direct access to `birds` is denied with PostgREST code `42501`; hidden rows are absent; writes/uploads are denied; signed-URL creation is denied for unpublished photos and succeeds for published photos; listing exposes only published bird folders; malformed and nonexistent-bird paths are denied cleanly. | Not run |
 | 2. Non-staff authenticated user | Create a second test Auth account from the Supabase dashboard (do not enable public sign-ups), do not add its UUID to `staff_users`, then repeat the read/write/photo checks with that account's access token. For PATCH/DELETE, request representation and verify either a permission error or an empty returned row list; then read as staff to confirm the test rows are unchanged and still exist. | It can read only published records, cannot insert or upload, and cannot change or delete any bird row. A zero-row successful PATCH/DELETE is expected under RLS, provided staff confirms the rows remain unchanged. It cannot sign URLs for unpublished photos. | Not run |
 | 3. Public account creation disabled | First pass the smoke test to establish that the project URL and key work. Then follow “Verify public sign-up and anonymous sign-in settings” below, using an email address you control (not an `example.com` address). | Email sign-up returns Auth `error_code=signup_disabled`; anonymous sign-in returns `error_code=anonymous_provider_disabled`. Unexpected success is a failure and creates an Auth user that must be deleted. Inconclusive status, URL/key, or rate-limit results do not pass. | Not run |
@@ -294,15 +375,16 @@ using real client records.
 ### Optional automated smoke test
 
 `supabase/smoke-test.mjs` uses only Node.js built-ins and requires Node 18 or
-newer. Run it only against a disposable test project: it creates two temporary
-bird rows and photos, verifies access with staff, non-staff, and anonymous
-requests, then attempts to remove all created rows and files. It refuses to
+newer. Run it only against a disposable test project after both migrations:
+it creates three temporary bird rows and two photos, verifies access with
+staff, non-staff, and anonymous requests, then attempts to remove all created
+rows and files. It refuses to
 start unless `SUPABASE_SMOKE_TEST_ACK` is exactly
 `I_HAVE_A_DISPOSABLE_PROJECT`.
 
 Before running it:
 
-1. Apply the migration and create a staff Auth user plus a separate
+1. Apply migrations 001 and 002 in order, then create a staff Auth user plus a separate
    non-staff Auth user in the dashboard. Enable **Auto Confirm User** for both
    accounts (or confirm them before the test), then add only the staff user's
    UUID to `staff_users`; keep public sign-ups and anonymous sign-ins disabled.

@@ -142,6 +142,9 @@ requests fail. The public page must show only rows returned by the approved and
 published query. Do not print the QR code until that change is deployed and
 the client confirms the final URL.
 
+The generated QR code points to `https://gojouzxh.github.io/ali-store/`.
+If this address changes, every printed copy must be replaced.
+
 ## Real owner bird data (unpublished)
 
 `supabase/seeds/real_owner_birds_unpublished.sql` records the nine real owner

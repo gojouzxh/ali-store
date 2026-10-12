@@ -10,7 +10,7 @@
 
   <link rel="stylesheet" href="css/style.css">
 </head>
-<body>
+<body$body_style>
 
   <div class="bg-layer"></div>
   <div class="grain"></div>
@@ -44,50 +44,33 @@
             alt="APM Aviary - Locally Bred Birds"
             width="480"
             height="480"
-            onerror="this.hidden = true; this.parentElement.hidden = true"
           >
         </div>
       </div>
     </div>
   </section>
 
-  <div class="rail">
-    <span class="rail-label">SEARCH LEDGER →</span>
-    <input id="search" type="text" placeholder="bird name or habitat…">
+  <form class="rail" action="/" method="get">
+    <input type="hidden" name="f" value="$active_filter">
+    <label class="rail-label" for="search">SEARCH LEDGER →</label>
+    <input id="search" name="q" type="search" value="$query" placeholder="bird name or habitat…">
+    <button type="submit" class="chip">Search</button>
 
     <div class="chipset" id="chips">
-      <button class="chip active" data-f="all">All</button>
-      <button class="chip" data-f="budgie">Budgies</button>
-      <button class="chip" data-f="lovebird">Lovebirds</button>
+      <button type="submit" name="filter" value="all" class="chip$all_active">All</button>
+      <button type="submit" name="filter" value="budgie" class="chip$budgie_active">Budgies</button>
+      <button type="submit" name="filter" value="lovebird" class="chip$lovebird_active">Lovebirds</button>
     </div>
-  </div>
+  </form>
 
   <main>
-    <div class="grid" id="grid"></div>
+    <div class="grid" id="grid">$cards</div>
   </main>
 
   <footer>
     <p>THE AVIARY LEDGER · NINE SPECIMENS CATALOGED · HANDLE PAGES WITH CARE</p>
   </footer>
 
-  <div class="scrim" id="scrim">
-    <div class="dossier" id="dossier">
-      <button class="dossier-close" id="closeBtn">✕</button>
-      <div class="stamp" id="stamp">EXAMINED</div>
-
-      <div class="dossier-head">
-        <div class="dossier-illus" id="dPhoto"></div>
-        <div>
-          <h2 class="dossier-name" id="dName"></h2>
-          <div class="dossier-sci" id="dSci"></div>
-        </div>
-      </div>
-
-      <div class="fields" id="dFields"></div>
-      <div class="notes-box" id="dNotes"></div>
-    </div>
-  </div>
-
-  <script src="js/script.js"></script>
+  $dossier
 </body>
 </html>

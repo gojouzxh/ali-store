@@ -92,11 +92,11 @@ Editor by deleting that row.
 The frontend configuration needs the project URL and publishable key. Keep
 these public values separate from server-only keys. Never commit a secret key.
 
-`js/catalog-data.js` is an isolated browser data module for the planned public
-catalog. It reads only safe fields from `birds_public` and can request short-
-lived photo URLs. It sends the publishable key in the `apikey` header. It is
-not yet connected to `index.html`; the hard-coded demonstration catalog still
-remains in `js/script.js` and is not safe to publish. The real owner records
+`catalog_data.py` is an isolated PyScript browser module for the planned
+public catalog. It reads only safe fields from `birds_public` and can request
+short-lived photo URLs. It sends the publishable key in the `apikey` header.
+It is not yet connected to `index.html`; the hard-coded demonstration catalog
+still remains in `script.py` and is not safe to publish. The real owner records
 are kept separately in `supabase/seeds/real_owner_birds_unpublished.sql`.
 Configure only the project URL and publishable key when the tested frontend
 switch is ready.
@@ -117,11 +117,11 @@ Both catalog and signed-photo requests time out after 10 seconds and reject
 with an error. When the public page is wired, handle that failure by showing
 the generic "Catalog unavailable" message, never by rendering demo records.
 
-The current `index.html` loads `js/script.js` as a classic script and does not
-load the catalog module. The eventual Supabase integration must load the module
-with `<script type="module">`; serve the site over HTTP during development
-(for example `python -m http.server`) because browsers do not load ES modules
-from a `file://` page.
+The current `index.html` loads `script.py` through PyScript and does not load
+the catalog module. The page uses PyScript's JavaScript runtime bootstrap, but
+the site behavior and catalog client are implemented in Python. Serve the site
+over HTTP during development (for example `python -m http.server`) because
+PyScript cannot load from a `file://` page.
 
 When the page is connected, render all client/data values using `textContent`
 or safe DOM construction, never interpolating them into `innerHTML`. On a
@@ -206,10 +206,9 @@ No category can be assigned from the supplied data without inference, so the
 category chips cannot filter these entries until the owner supplies categories.
 The current dossier layout expects scientific name/family, a conservation
 status, and field notes; it has not been adapted to these null values. Do not
-wire the data to the page until null display behavior is designed. The existing
-hard-coded demonstration array remains in `js/script.js` because this data-only
-change does not edit frontend code; this is not a fallback for the database and
-the prototype must remain undeployed.
+wire the data to the page until null display behavior is designed. The
+hard-coded demonstration array remains in `script.py`; this is not a fallback
+for the database and the prototype must remain undeployed.
 
 Before launch, prepare data and then test with at least two identities:
 
@@ -377,8 +376,8 @@ using real client records.
 
 ### Optional automated smoke test
 
-`supabase/smoke-test.mjs` uses only Node.js built-ins and requires Node 18 or
-newer. Run it only against a disposable test project after both migrations:
+`supabase/smoke_test.py` uses only the Python standard library. Run it only
+against a disposable test project after both migrations:
 it creates three temporary bird rows and two photos, verifies access with
 staff, non-staff, and anonymous requests, then attempts to remove all created
 rows and files. It refuses to
@@ -421,11 +420,11 @@ Before running it:
 
    Passwords remain in the current PowerShell process environment until you
    clear them or close that shell. Do not use shared terminals or paste them
-   into logs. If you use a `.env` file instead, add it to `.gitignore`; Node's
-   `--env-file` flag requires Node 20.6 or newer.
-3. From the project folder, run `node .\supabase\smoke-test.mjs` in
-   PowerShell. Do not put credentials in the script, a committed file, or
-   shared logs; do not paste credentials into chat.
+   into logs. If you use a `.env` file instead, add it to `.gitignore`.
+3. From the project folder, run
+   `python .\supabase\smoke_test.py` in PowerShell. Do not put credentials in
+   the script, a committed file, or shared logs; do not paste credentials
+   into chat.
 
 The script prints pass/fail results with a UTC timestamp and exits nonzero if
 any check or cleanup fails. It does not test the dashboard's sign-up and

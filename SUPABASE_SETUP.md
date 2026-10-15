@@ -22,9 +22,12 @@ in the app is not authorization.
 
 ## 2. Apply the database and storage migration
 
-In a fresh project, run `supabase/migrations/001_initial_schema.sql` and then
-`supabase/migrations/002_allow_incomplete_drafts.sql` in the Supabase SQL
-Editor, in that order. The first migration creates:
+In a fresh project, run `supabase/migrations/001_initial_schema.sql`,
+`supabase/migrations/002_allow_incomplete_drafts.sql`, and
+`supabase/migrations/003_add_budgie_lovebird_categories.sql` in the Supabase SQL
+Editor, in that order. The category migration is safe to apply after the new
+initial schema and also updates projects that ran the older category check.
+The first migration creates:
 
 - `birds`, with species-level availability, optional quantity, IUCN metadata,
   photo path, and approval/publication flags. Both flags default to `false`.
@@ -57,11 +60,107 @@ Editor, in that order. The first migration creates:
 The second migration makes the designated catalog fields nullable for
 unpublished drafts, requires those fields before publication, and requires
 photo alt text whenever a photo path is set. It does not alter RLS, the public
-view, helper functions, or Storage rules.
+view, helper functions, or Storage rules. The third migration adds the
+`budgie` and `lovebird` categories while retaining `raptor`, `water`, and
+`tropical`.
 
 The migration is written for a fresh project and is not idempotent. If it
 partly fails, do not blindly run it again; use a disposable project and reset
 or recreate it before retrying.
+
+The public Storage read policy checks both the published bird folder and the
+same UUID/filename pattern used by `catalog_data.py`. For an existing project
+that already ran an earlier version of migration 001, apply this targeted,
+non-destructive policy replacement in the SQL Editor:
+
+```sql
+begin;
+
+drop policy if exists "Public reads published bird photos; staff read all"
+on storage.objects;
+
+create policy "Public reads published bird photos; staff read all"
+on storage.objects
+for select
+to anon, authenticated
+using (
+  bucket_id = 'bird-photos'
+  and (
+    (select public.is_aviary_staff())
+    or (
+      name ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/[A-Za-z0-9][A-Za-z0-9._-]*[.](jpg|jpeg|png|webp)$'
+      and (select public.is_published_bird_folder(storage.objects.name))
+    )
+  )
+);
+
+commit;
+```
+
+This policy is what lets anonymous visitors request signed URLs. It does not
+grant anonymous uploads or direct access to `birds`.
+
+Run the following read-only checks in the SQL Editor to inspect a configured
+project. The expected catalog column list and order is the `PUBLIC_BIRD_FIELDS`
+tuple in `catalog_data.py`; the view definition must include
+`where is_approved and is_published`.
+
+```sql
+-- First confirm the migration-created objects exist. NULL means missing.
+select
+  to_regclass('public.birds_public') as birds_public_relation,
+  to_regclass('public.birds') as birds_relation,
+  (select public from storage.buckets where id = 'bird-photos')
+    as bird_photos_is_public;
+
+-- Run the remaining checks only after both relations exist.
+-- Verify the view exposes exactly PUBLIC_BIRD_FIELDS in the same order.
+select coalesce(
+  array_agg(column_name::text order by ordinal_position) = array[
+    'id', 'common_name', 'scientific_name', 'family', 'category',
+    'hatch_info', 'lifespan', 'wingspan', 'habitat', 'diet',
+    'iucn_status', 'iucn_checked_at', 'source_note', 'call',
+    'field_notes', 'availability', 'quantity_available', 'photo_path',
+    'photo_alt', 'sort_order'
+  ]::text[],
+  false
+) as public_columns_match
+from information_schema.columns
+where table_schema = 'public'
+  and table_name = 'birds_public';
+
+-- View definition and effective role privileges.
+select pg_get_viewdef(to_regclass('public.birds_public'), true) as view_definition;
+select count(*) as published_view_rows_without_approval
+from public.birds_public as published
+left join public.birds as source on source.id = published.id
+where source.id is null
+   or not source.is_approved
+   or not source.is_published;
+select
+  has_table_privilege('anon', 'public.birds_public', 'select') as anon_can_read_view,
+  has_table_privilege('anon', 'public.birds', 'select') as anon_can_read_birds,
+  has_table_privilege('authenticated', 'public.birds', 'select')
+    as authenticated_can_query_rls_protected_birds;
+
+-- Bucket visibility and the applicable policies.
+select id, public
+from storage.buckets
+where id = 'bird-photos';
+
+select schemaname, tablename, policyname, roles, cmd, qual, with_check
+from pg_policies
+where (schemaname = 'storage' and tablename = 'objects')
+   or (schemaname = 'public' and tablename in ('birds', 'birds_public'))
+order by schemaname, tablename, policyname;
+```
+
+If `to_regclass` confirms that both public relations exist but PostgREST still
+returns `PGRST205`, refresh its schema cache with this non-destructive command:
+
+```sql
+notify pgrst, 'reload schema';
+```
 
 The Supabase advisor may report `birds_public` as a security-definer view and
 `staff_users` as RLS-enabled without policies. Both are intentional: the view
@@ -92,20 +191,30 @@ Editor by deleting that row.
 The frontend configuration needs the project URL and publishable key. Keep
 these public values separate from server-only keys. Never commit a secret key.
 
-`catalog_data.py` is an isolated PyScript browser module for the planned
-public catalog. It reads only safe fields from `birds_public` and can request
-short-lived photo URLs. It sends the publishable key in the `apikey` header.
-It is not yet connected to `index.html`; the hard-coded demonstration catalog
-still remains in `script.py` and is not safe to publish. The real owner records
-are kept separately in `supabase/seeds/real_owner_birds_unpublished.sql`.
-Configure only the project URL and publishable key when the tested frontend
-switch is ready.
+`catalog_data.py` is the PyScript browser client for the public catalog.
+`script.py` loads records from `birds_public`, which returns only approved and
+published rows, and requests short-lived photo URLs for records with photos.
+The client sends the publishable key in the `apikey` header. The real owner
+records are kept separately in `supabase/seeds/real_owner_birds_unpublished.sql`.
 
-The module also exports `formatAvailability(availability, quantityAvailable)`.
-For example, `formatAvailability('available', 2)` returns `Available (2)`.
+Before the page can connect, set the two empty meta tags in `index.html`:
+
+1. Get the project URL from the Supabase dashboard's **Connect** panel or
+   **Project Settings → Data API**. It looks like
+   `https://your-project-ref.supabase.co`; `https://<project>.supabase.co` is
+   only a placeholder and will not work.
+2. Get the **Publishable key** from **Project Settings → API Keys**. A legacy
+   `anon` public key also works. Never use or put a `service_role` or secret
+   key in the website.
+3. Put those public values in the `supabase-url` and
+   `supabase-publishable-key` meta tags. The page intentionally shows a
+   configuration message instead of demo birds if either value is missing.
+
+The module also exports `format_availability(availability, quantity_available)`.
+For example, `format_availability("available", 2)` returns `Available (2)`.
 The schema deliberately does not enforce availability/count consistency until
 the owner confirms the remaining semantics. To avoid presenting contradictory
-data as valid, the formatter logs a console warning and returns the neutral
+data as valid, the formatter emits a warning and returns the neutral
 customer label `Ask us about availability` for `available` with quantity zero
 or `sold` with a positive quantity. Flag those records for staff review in the
 future admin screen. Reserved quantity remains unconstrained.
@@ -117,30 +226,28 @@ Both catalog and signed-photo requests time out after 10 seconds and reject
 with an error. When the public page is wired, handle that failure by showing
 the generic "Catalog unavailable" message, never by rendering demo records.
 
-The current `index.html` loads `script.py` through PyScript and does not load
-the catalog module. The page uses PyScript's JavaScript runtime bootstrap, but
-the site behavior and catalog client are implemented in Python. Serve the site
-over HTTP during development (for example `python -m http.server`) because
-PyScript cannot load from a `file://` page.
+The current `index.html` loads `script.py` through PyScript and explicitly
+loads `catalog_data.py` as a local Python dependency. The page uses PyScript's
+JavaScript runtime bootstrap, but the site behavior and catalog client are
+implemented in Python. Serve the site over HTTP during development (for
+example `python -m http.server`) because PyScript cannot load from a `file://`
+page.
 
-When the page is connected, render all client/data values using `textContent`
-or safe DOM construction, never interpolating them into `innerHTML`. On a
-catalog request failure, show visitors a generic "Catalog unavailable" message
-without exposing technical error details; never show the
-demo array as a fallback.
+Render all client/data values using `textContent` or safe DOM construction,
+never interpolating them into `innerHTML`. On a catalog request failure, show
+visitors a generic "Catalog unavailable" message without exposing technical
+error details; never show the demo array as a fallback.
 In bird dossiers, if `iucn_checked_at` is null, show "Status not yet verified"
 rather than a blank date. Resize and convert photos to WebP at about 1200 px
 wide before upload to help limit image transfer size.
 
 ### Deployment gate
 
-Do not deploy the current prototype publicly or print a QR code for it. The
-existing frontend still contains hard-coded demonstration birds. In the same
-change that connects the public catalog to Supabase, remove that hard-coded
-array and do not add a fallback that renders it when configuration or database
-requests fail. The public page must show only rows returned by the approved and
-published query. Do not print the QR code until that change is deployed and
-the client confirms the final URL.
+Do not deploy the current prototype publicly or print a QR code for it until
+the Supabase URL and publishable key are configured and the public catalog has
+been verified. The public page must show only rows returned by the approved
+and published query. Do not print the QR code until that change is deployed
+and the client confirms the final URL.
 
 The generated QR code points to `https://gojouzxh.github.io/ali-store/`.
 If this address changes, every printed copy must be replaced.
@@ -155,16 +262,24 @@ specified wingspan text, preserves both pair labels in `common_name`, leaves
 categories, conservation data, field notes, availability, quantities, or
 photos have been inferred.
 
+These nine draft rows will not appear on the public page. Complete the
+required catalog fields, add any verified conservation and photo data, and
+approve and publish each record through the authorized staff workflow before
+expecting it to appear in `birds_public`.
+
 **Do not run this seed after migration 001 alone.** Migration 001 declares
 `scientific_name`, `family`, `category`, `iucn_status`, `source_note`,
 `field_notes`, `availability`, and `photo_alt` as `NOT NULL`. The supplied
 owner data leaves those values null. First apply
-`supabase/migrations/001_initial_schema.sql`, then apply the additive
-`supabase/migrations/002_allow_incomplete_drafts.sql`, then run the seed once.
+`supabase/migrations/001_initial_schema.sql`, then apply
+`supabase/migrations/002_allow_incomplete_drafts.sql` and
+`supabase/migrations/003_add_budgie_lovebird_categories.sql`, then run the seed
+once.
 The second migration permits those fields to be null on drafts but requires
 them before publication. `call` remains `NOT NULL` and is supplied for all
 nine records. No existing CHECK constraints, RLS, view, helper function, or
-Storage rule is changed. The seed application status is **Not run**.
+Storage rule is changed by migration 002. Migration 003 changes only the
+category allow-list. The seed application status is **Not run**.
 
 Existing `birds` CHECK constraints remain compatible with nullable drafts:
 
@@ -187,36 +302,47 @@ neither a photo path nor alt text, so it satisfies that photo check while
 remaining a draft. The seed is not idempotent; run it only once in the
 intended project.
 
-All nine records have these fields null:
+All nine records are missing the same required publication fields. The
+`iucn_checked_at`, `quantity_available`, and `photo_path` fields are also
+currently null but are nullable and are not publication requirements.
 
-| Bird | Fields left null |
+| Bird | Required before publication |
 |---|---|
-| 01 — Grey/White | `scientific_name`, `family`, `category`, `iucn_status`, `iucn_checked_at`, `source_note`, `field_notes`, `availability`, `quantity_available`, `photo_path`, `photo_alt` |
-| 02 — Pale Yellow Budgies | `scientific_name`, `family`, `category`, `iucn_status`, `iucn_checked_at`, `source_note`, `field_notes`, `availability`, `quantity_available`, `photo_path`, `photo_alt` |
-| 03 — Lutino Yellow | `scientific_name`, `family`, `category`, `iucn_status`, `iucn_checked_at`, `source_note`, `field_notes`, `availability`, `quantity_available`, `photo_path`, `photo_alt` |
-| 04 — Green Budgies | `scientific_name`, `family`, `category`, `iucn_status`, `iucn_checked_at`, `source_note`, `field_notes`, `availability`, `quantity_available`, `photo_path`, `photo_alt` |
-| 05 — Blue/Violet Budgie | `scientific_name`, `family`, `category`, `iucn_status`, `iucn_checked_at`, `source_note`, `field_notes`, `availability`, `quantity_available`, `photo_path`, `photo_alt` |
-| 06 — Yellow Lutino Budgie | `scientific_name`, `family`, `category`, `iucn_status`, `iucn_checked_at`, `source_note`, `field_notes`, `availability`, `quantity_available`, `photo_path`, `photo_alt` |
-| 07 — Yellow Lutino (Pair record) | `scientific_name`, `family`, `category`, `iucn_status`, `iucn_checked_at`, `source_note`, `field_notes`, `availability`, `quantity_available`, `photo_path`, `photo_alt` |
-| 08 — Blue (Pair record) | `scientific_name`, `family`, `category`, `iucn_status`, `iucn_checked_at`, `source_note`, `field_notes`, `availability`, `quantity_available`, `photo_path`, `photo_alt` |
-| 09 — Blue Lovebirds | `scientific_name`, `family`, `category`, `iucn_status`, `iucn_checked_at`, `source_note`, `field_notes`, `availability`, `quantity_available`, `photo_path`, `photo_alt` |
+| 01 — Grey/White | `scientific_name`, `family`, `category`, `iucn_status`, `source_note`, `field_notes`, `availability`, `photo_alt` |
+| 02 — Pale Yellow Budgies | `scientific_name`, `family`, `category`, `iucn_status`, `source_note`, `field_notes`, `availability`, `photo_alt` |
+| 03 — Lutino Yellow | `scientific_name`, `family`, `category`, `iucn_status`, `source_note`, `field_notes`, `availability`, `photo_alt` |
+| 04 — Green Budgies | `scientific_name`, `family`, `category`, `iucn_status`, `source_note`, `field_notes`, `availability`, `photo_alt` |
+| 05 — Blue/Violet Budgie | `scientific_name`, `family`, `category`, `iucn_status`, `source_note`, `field_notes`, `availability`, `photo_alt` |
+| 06 — Yellow Lutino Budgie | `scientific_name`, `family`, `category`, `iucn_status`, `source_note`, `field_notes`, `availability`, `photo_alt` |
+| 07 — Yellow Lutino (Pair record) | `scientific_name`, `family`, `category`, `iucn_status`, `source_note`, `field_notes`, `availability`, `photo_alt` |
+| 08 — Blue (Pair record) | `scientific_name`, `family`, `category`, `iucn_status`, `source_note`, `field_notes`, `availability`, `photo_alt` |
+| 09 — Blue Lovebirds | `scientific_name`, `family`, `category`, `iucn_status`, `source_note`, `field_notes`, `availability`, `photo_alt` |
 
-The current filter categories are limited to `raptor`, `water`, and `tropical`.
-No category can be assigned from the supplied data without inference, so the
-category chips cannot filter these entries until the owner supplies categories.
-The current dossier layout expects scientific name/family, a conservation
-status, and field notes; it has not been adapted to these null values. Do not
-wire the data to the page until null display behavior is designed. The
-hard-coded demonstration array remains in `script.py`; this is not a fallback
-for the database and the prototype must remain undeployed.
+`availability` must be one of `available`, `reserved`, or `sold`.
+`quantity_available` may be null, but when recorded it should agree with the
+availability state; the database does not enforce that relationship. A photo
+is optional, but `photo_alt` must be non-null to publish even without a photo;
+when a photo is uploaded, provide non-empty descriptive alt text and use the
+bird's UUID as its folder. The schema permits `budgie` and `lovebird` after
+applying migration 003; the seed leaves each category blank so staff can set
+the correct value on each draft before publication.
+
+The public page builds category filters from the values on published records.
+The dossier supports nullable scientific name, family, conservation status,
+and field notes; an unverified conservation status is labeled explicitly.
+The public page does not contain a hard-coded bird fallback. Until Supabase is
+provisioned with the required schema and complete records are approved and
+published, it will show an error or empty-catalog message rather than draft or
+demonstration birds.
 
 Before launch, prepare data and then test with at least two identities:
 
-1. Apply migrations 001 and 002, in order, in a fresh disposable Supabase
-   project.
+1. Apply migrations 001, 002, and 003, in order, in a fresh disposable
+   Supabase project.
 2. Create a staff Auth user in the dashboard and add its UUID to
    `staff_users`.
-3. Run the real-owner seed once; migration 002 was already applied in step 1.
+3. Run the real-owner seed once; migrations 002 and 003 were already applied
+   in step 1.
    For security checks, as staff also create disposable test birds (including
    one approved/published and one unpublished bird) with test photos in their
    ID folders.
@@ -237,14 +363,14 @@ Before launch, prepare data and then test with at least two identities:
 
 ## Pre-launch security test checklist
 
-These tests are **not run** until a Supabase project is configured and the
-migrations are applied. Record actual results and evidence here; do not mark a
+These tests are **not run** until a Supabase project has the required schema
+migrations applied. Record actual results and evidence here; do not mark a
 test passed based only on inspecting the policy SQL.
 
 | Check | How to test | Expected result | Result / date |
 |---|---|---|---|
-| Migration and RLS | Apply migrations 001 and 002 in order in a test project. Run the SQL verification queries below in the SQL Editor. | RLS is enabled on both app tables and the expected table/storage policies exist. | Not run |
-| Real owner data seed | Apply migration 001, then migration 002, then run `supabase/seeds/real_owner_birds_unpublished.sql` once. Query the inserted owner rows. | Exactly nine owner records are inserted with both publication flags false and the supplied unspecified fields still NULL. | Not run |
+| Migration and RLS | Apply migrations 001, 002, and 003 in order in a test project. Run the SQL verification queries below in the SQL Editor. | RLS is enabled on both app tables and the expected table/storage policies exist. | Not run |
+| Real owner data seed | Apply migrations 001, 002, and 003, then run `supabase/seeds/real_owner_birds_unpublished.sql` once. Query the inserted owner rows. | Exactly nine owner records are inserted with both publication flags false and the supplied unspecified fields still NULL. | Not run |
 | Incomplete draft publication guard | As allow-listed staff, attempt to set both `is_approved=true` and `is_published=true` on an owner-data draft that still has NULL publication-required fields. | The update is rejected with PostgREST/PostgreSQL check-violation code `23514`; the row remains unapproved and unpublished. | Not run |
 | Blank scientific name publication guard | As allow-listed staff, insert a row with `is_approved=true`, `is_published=true`, `scientific_name=''`, and all other publication fields populated. | The insert is rejected with check-violation code `23514`. | Not run |
 | Complete record can publish | As allow-listed staff, create a row with `common_name`, `call`, and all publication-required fields populated; leave `photo_path` NULL or provide `photo_alt` with it. Set `is_approved=true` and `is_published=true`. | The insert/update succeeds, demonstrating complete data can still be published while the existing approval rule remains enforced. | Not run |
@@ -386,7 +512,7 @@ start unless `SUPABASE_SMOKE_TEST_ACK` is exactly
 
 Before running it:
 
-1. Apply migrations 001 and 002 in order, then create a staff Auth user plus a separate
+1. Apply migrations 001, 002, and 003 in order, then create a staff Auth user plus a separate
    non-staff Auth user in the dashboard. Enable **Auto Confirm User** for both
    accounts (or confirm them before the test), then add only the staff user's
    UUID to `staff_users`; keep public sign-ups and anonymous sign-ins disabled.

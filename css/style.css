@@ -365,6 +365,13 @@ main {
   gap: 26px;
 }
 
+.catalog-message {
+  color: var(--mist);
+  font-family: 'Special Elite', monospace;
+  letter-spacing: 0.04em;
+  text-align: center;
+}
+
 .card {
   position: relative;
   background: var(--parchment);

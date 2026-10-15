@@ -11,6 +11,8 @@
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="https://pyscript.net/releases/2025.3.1/core.css">
   <script type="module" src="https://pyscript.net/releases/2025.3.1/core.js"></script>
+  <meta name="supabase-url" content="https://ezgtyuiimdfxknwjzgae.supabase.co">
+  <meta name="supabase-publishable-key" content="sb_publishable_aoRru5cc_ufIcFbtsMIonA_ceLFoynV">
 </head>
 <body>
 
@@ -34,7 +36,7 @@
         <div class="hero-eyebrow">Vol. I — A Living Catalog</div>
         <h1 class="hero-title">Every bird<br>has a <em>dossier.</em></h1>
         <p class="hero-sub">
-          Nine bird records for APM Aviary. Tap a card to view its hatch date, lifespan, wingspan, habitat, diet, and call.
+          Published bird records for APM Aviary. Tap a card to view its hatch date, lifespan, wingspan, habitat, diet, and call.
         </p>
         <div class="hero-line"></div>
       </div>
@@ -58,17 +60,18 @@
 
     <div class="chipset" id="chips">
       <button class="chip active" data-f="all">All</button>
-      <button class="chip" data-f="budgie">Budgies</button>
-      <button class="chip" data-f="lovebird">Lovebirds</button>
     </div>
   </div>
 
   <main>
+    <p id="catalogMessage" class="catalog-message" role="status" aria-live="polite">
+      Loading published birds…
+    </p>
     <div class="grid" id="grid"></div>
   </main>
 
   <footer>
-    <p>THE AVIARY LEDGER · NINE SPECIMENS CATALOGED · HANDLE PAGES WITH CARE</p>
+    <p>THE AVIARY LEDGER · PUBLISHED SPECIMENS · HANDLE PAGES WITH CARE</p>
   </footer>
 
   <div class="scrim" id="scrim">
@@ -89,6 +92,10 @@
     </div>
   </div>
 
-  <script type="py" src="script.py"></script>
+  <script
+    type="py"
+    src="script.py"
+    config='{"files":{"./catalog_data.py":"catalog_data.py"}}'
+  ></script>
 </body>
 </html>

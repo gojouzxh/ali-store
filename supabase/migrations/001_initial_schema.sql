@@ -10,7 +10,7 @@ create table public.birds (
   common_name text not null,
   scientific_name text not null,
   family text not null,
-  category text not null check (category in ('raptor', 'water', 'tropical')),
+  category text not null,
   hatch_info text not null default '',
   lifespan text not null default '',
   wingspan text not null default '',
@@ -35,6 +35,8 @@ create table public.birds (
   updated_at timestamptz not null default now(),
   constraint birds_published_requires_approval
     check (not is_published or is_approved),
+  constraint birds_category_allowed
+    check (category in ('raptor', 'water', 'tropical', 'budgie', 'lovebird')),
   constraint birds_photo_path_matches_id
     check (photo_path is null or split_part(photo_path, '/', 1) = id::text)
 );
@@ -182,7 +184,10 @@ using (
   bucket_id = 'bird-photos'
   and (
     (select public.is_aviary_staff())
-    or (select public.is_published_bird_folder(storage.objects.name))
+    or (
+      name ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/[A-Za-z0-9][A-Za-z0-9._-]*[.](jpg|jpeg|png|webp)$'
+      and (select public.is_published_bird_folder(storage.objects.name))
+    )
   )
 );
 

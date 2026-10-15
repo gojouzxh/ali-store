@@ -1,26 +1,14 @@
-"""Browser-side Python behavior for the bird catalog, loaded by PyScript."""
+"""Browser-side Python behavior for the Supabase-powered bird catalog."""
 
 from __future__ import annotations
 
+import asyncio
 from dataclasses import dataclass
+from typing import Any
 
-from py import Math, document, window  # pyright: ignore[reportMissingImports]
-
-try:
-    from pyodide.ffi import create_proxy  # pyright: ignore[reportMissingImports]
-except ImportError:  # pragma: no cover - fallback for non-Pyodide runtimes
-    class _FallbackProxy:
-        def __init__(self, callback):
-            self._callback = callback
-
-        def __call__(self, *args, **kwargs):
-            return self._callback(*args, **kwargs)
-
-        def destroy(self):
-            self._callback = None
-
-    def create_proxy(callback):
-        return _FallbackProxy(callback)
+from catalog_data import create_catalog_data_client, format_availability
+from js import Math, document, window  # pyright: ignore[reportMissingImports]
+from pyodide.ffi import create_proxy  # pyright: ignore[reportMissingImports]
 
 
 _callback_refs = []
@@ -28,198 +16,23 @@ _callback_refs = []
 
 @dataclass(frozen=True)
 class Bird:
-    id: int
+    id: str
     tag: str
     name: str
     sci: str | None
     family: str | None
-    hatch: str
-    life: str
-    wing: str
-    habitat: str
-    diet: str
+    hatch: str | None
+    life: str | None
+    wing: str | None
+    habitat: str | None
+    diet: str | None
     status: str | None
     status_text: str | None
-    call: str
+    call: str | None
     stat: str | None
     notes: str | None
-    photo: str
-    photo_alt: str
-
-
-BIRDS = (
-    Bird(
-        id=1,
-        tag="budgie",
-        name="Grey/White",
-        sci=None,
-        family=None,
-        hatch="March 12, 2025",
-        life="7-12 years",
-        wing="25-30 cm",
-        habitat="Spacious flight cage with natural perches, food and water bowls, and toys",
-        diet="Budgie seed mix or formulated pellets, leafy greens, and safe vegetables",
-        status=None,
-        status_text=None,
-        call="Soft chirping, tweeting, and contact calls",
-        stat=None,
-        notes=None,
-        photo="images/bird-01.jpg",
-        photo_alt="Grey and white budgie",
-    ),
-    Bird(
-        id=2,
-        tag="budgie",
-        name="Pale Yellow Budgies",
-        sci=None,
-        family=None,
-        hatch="April 5, 2025",
-        life="7-12 years",
-        wing="25-30 cm",
-        habitat="Spacious flight cage with natural perches, food and water bowls, and toys",
-        diet="Budgie seed mix or formulated pellets, leafy greens, and safe vegetables",
-        status=None,
-        status_text=None,
-        call="Soft chirping, tweeting, and contact calls",
-        stat=None,
-        notes=None,
-        photo="images/bird-02.jpg",
-        photo_alt="Pale yellow budgies",
-    ),
-    Bird(
-        id=3,
-        tag="budgie",
-        name="Lutino Yellow",
-        sci=None,
-        family=None,
-        hatch="January 20, 2025",
-        life="7-12 years",
-        wing="25-30 cm",
-        habitat="Secure flight cage with horizontal bars, perches, toys, and room to move",
-        diet="Quality budgie seed mix or pellets, leafy greens, carrots, and clean drinking water",
-        status=None,
-        status_text=None,
-        call="Cheerful chirps, whistles, and short chatter",
-        stat=None,
-        notes=None,
-        photo="images/bird-03.jpg",
-        photo_alt="Yellow lutino budgie",
-    ),
-    Bird(
-        id=4,
-        tag="budgie",
-        name="Green Budgies",
-        sci=None,
-        family=None,
-        hatch="February 14, 2025",
-        life="7-12 years",
-        wing="25-30 cm",
-        habitat="Secure flight cage with horizontal bars, perches, toys, and room to move",
-        diet="Quality budgie seed mix or pellets, leafy greens, carrots, and clean drinking water",
-        status=None,
-        status_text=None,
-        call="Cheerful chirps, whistles, and short chatter",
-        stat=None,
-        notes=None,
-        photo="images/bird-04.jpg",
-        photo_alt="Green budgies",
-    ),
-    Bird(
-        id=5,
-        tag="budgie",
-        name="Blue/Violet Budgie",
-        sci=None,
-        family=None,
-        hatch="May 8, 2025",
-        life="7-12 years",
-        wing="25-30 cm",
-        habitat="Flight cage with natural wood perches, enrichment toys, and daily opportunities for safe exercise",
-        diet="Budgie pellets or seed mix, leafy vegetables, and occasional safe fruit",
-        status=None,
-        status_text=None,
-        call="High-pitched chirping, whistles, and flock contact calls",
-        stat=None,
-        notes=None,
-        photo="images/bird-05.jpg",
-        photo_alt="Blue and violet budgie",
-    ),
-    Bird(
-        id=6,
-        tag="budgie",
-        name="Yellow Lutino Budgie",
-        sci=None,
-        family=None,
-        hatch="June 18, 2025",
-        life="7-12 years",
-        wing="25-30 cm",
-        habitat="Spacious cage with perches at different heights, toys, and a shaded resting area",
-        diet="Budgie seed mix or pellets, fresh greens, and safe vegetables",
-        status=None,
-        status_text=None,
-        call="Light chirping, squeaks, and melodic whistles",
-        stat=None,
-        notes=None,
-        photo="images/bird-06.jpg",
-        photo_alt="Yellow lutino budgie",
-    ),
-    Bird(
-        id=7,
-        tag="budgie",
-        name="Yellow Lutino (Pair record)",
-        sci=None,
-        family=None,
-        hatch="November 22, 2024",
-        life="7-12 years",
-        wing="25-30 cm",
-        habitat="Flight cage with multiple perches, enrichment toys, and separate feeding spaces",
-        diet="Balanced budgie seed mix or pellets, leafy greens, vegetables, and fresh water",
-        status=None,
-        status_text=None,
-        call="Chirping, whistles, and social chatter",
-        stat=None,
-        notes=None,
-        photo="images/bird-07.jpg",
-        photo_alt="Yellow lutino budgie pair",
-    ),
-    Bird(
-        id=8,
-        tag="budgie",
-        name="Blue (Pair record)",
-        sci=None,
-        family=None,
-        hatch="December 10, 2024",
-        life="7-12 years",
-        wing="25-30 cm",
-        habitat="Flight cage with multiple perches, enrichment toys, and separate feeding spaces",
-        diet="Balanced budgie seed mix or pellets, leafy greens, vegetables, and fresh water",
-        status=None,
-        status_text=None,
-        call="Chirping, whistles, and social chatter",
-        stat=None,
-        notes=None,
-        photo="images/bird-08.jpg",
-        photo_alt="Blue budgie pair",
-    ),
-    Bird(
-        id=9,
-        tag="lovebird",
-        name="Blue Lovebirds",
-        sci=None,
-        family=None,
-        hatch="July 19, 2025",
-        life="10-15 years",
-        wing="24-28 cm",
-        habitat="Secure cage with sturdy perches, chew toys, and space for climbing and flapping",
-        diet="Lovebird pellets or a balanced seed mix, leafy greens, safe vegetables, and clean water",
-        status=None,
-        status_text=None,
-        call="Loud chirps, squeaks, and short squawks",
-        stat=None,
-        notes=None,
-        photo="images/bird-09.jpg",
-        photo_alt="Blue lovebirds",
-    ),
-)
+    photo: str | None
+    photo_alt: str | None
 
 
 def _keep_callback(callback):
@@ -246,9 +59,7 @@ def _schedule(callback, delay=None, animation_frame=False):
 
 
 def _bind(element, event_name, callback, capture=False):
-    element.addEventListener(
-        event_name, _keep_callback(callback), capture
-    )
+    element.addEventListener(event_name, _keep_callback(callback), capture)
 
 
 def _text_element(tag_name, class_name, value):
@@ -288,17 +99,24 @@ def _create_photo_frame(photo, photo_alt, class_name):
 
 def _render_cards(birds):
     grid.replaceChildren()
+    if not birds:
+        if active_filter != "all" or search.value.strip():
+            _show_message("No published birds match your filters.")
+        else:
+            _show_message("No birds are currently approved and published.")
+        return
 
+    _show_message("")
     for index, bird in enumerate(birds):
         card = document.createElement("div")
         card.className = "card"
-        card.dataset.specimenId = str(bird.id)
+        card.dataset.specimenId = bird.id
         card.style.animationDelay = f"{index * 0.06}s"
 
         specimen = document.createElement("div")
         specimen.className = "specimen-no"
         specimen.appendChild(
-            _text_element("span", "", f"SPECIMEN NO. {bird.id:02d}")
+            _text_element("span", "", f"SPECIMEN NO. {index + 1:02d}")
         )
         specimen.appendChild(_text_element("span", "", bird.tag.upper()))
         card.appendChild(specimen)
@@ -317,7 +135,7 @@ def _render_cards(birds):
 
 grid = document.getElementById("grid")
 search = document.getElementById("search")
-chips = document.querySelectorAll(".chip")
+chips = document.getElementById("chips")
 scrim = document.getElementById("scrim")
 d_name = document.getElementById("dName")
 d_sci = document.getElementById("dSci")
@@ -325,13 +143,36 @@ d_photo = document.getElementById("dPhoto")
 d_fields = document.getElementById("dFields")
 d_notes = document.getElementById("dNotes")
 stamp = document.getElementById("stamp")
+catalog_message = document.getElementById("catalogMessage")
+birds: list[Bird] = []
 active_filter = "all"
+
+
+def _show_message(message):
+    catalog_message.textContent = message
+    catalog_message.hidden = not bool(message)
+
+
+def _render_chips(categories):
+    chips.replaceChildren()
+    all_chip = document.createElement("button")
+    all_chip.className = "chip active"
+    all_chip.dataset.f = "all"
+    all_chip.textContent = "All"
+    chips.appendChild(all_chip)
+
+    for category in categories:
+        chip = document.createElement("button")
+        chip.className = "chip"
+        chip.dataset.f = category
+        chip.textContent = category.replace("_", " ").title()
+        chips.appendChild(chip)
 
 
 def _apply_filters(*_args):
     query = search.value.strip().casefold()
     matching_birds = []
-    for bird in BIRDS:
+    for bird in birds:
         if active_filter != "all" and bird.tag != active_filter:
             continue
         searchable_values = " ".join(
@@ -356,9 +197,9 @@ def _append_dossier_field(label, value, class_name="field"):
 
 
 def _status_class(status):
-    if status == "lc":
+    if status and status.casefold() == "lc":
         return "status-lc"
-    if status == "nt":
+    if status and status.casefold() == "nt":
         return "status-nt"
     return "status-vu"
 
@@ -437,15 +278,17 @@ def _on_grid_click(event):
     card = event.target.closest(".card")
     if card is None:
         return
-    specimen_id = int(card.dataset.specimenId)
-    bird = next(item for item in BIRDS if item.id == specimen_id)
-    _open_dossier(bird)
+    bird = next((item for item in birds if item.id == card.dataset.specimenId), None)
+    if bird is not None:
+        _open_dossier(bird)
 
 
 def _on_chip_click(event):
     global active_filter
-    selected_chip = event.currentTarget
-    for chip in chips:
+    selected_chip = event.target.closest(".chip")
+    if selected_chip is None:
+        return
+    for chip in chips.querySelectorAll(".chip"):
         chip.classList.remove("active")
     selected_chip.classList.add("active")
     active_filter = selected_chip.dataset.f
@@ -475,15 +318,116 @@ def _on_photo_error(event):
     placeholder.hidden = False
 
 
-_render_cards(BIRDS)
+def _bird_from_record(record: dict[str, Any], photo_url: str | None) -> Bird:
+    category = record.get("category") or "uncategorized"
+    status = record.get("iucn_status")
+    checked_at = record.get("iucn_checked_at")
+    status_text = None
+    if checked_at:
+        status_text = (
+            f"{str(status).upper()} · checked {checked_at}"
+            if status
+            else f"Status not yet verified · last checked {checked_at}"
+        )
+    else:
+        status_text = (
+            f"{str(status).upper()} · Status not yet verified"
+            if status
+            else "Status not yet verified"
+        )
+
+    availability = record.get("availability")
+    quantity = record.get("quantity_available")
+    stat = (
+        format_availability(availability, quantity)
+        if availability
+        else None
+    )
+    source_note = record.get("source_note")
+    field_notes = record.get("field_notes")
+    notes = " ".join(value for value in (source_note, field_notes) if value) or None
+    bird_id = record.get("id")
+    common_name = record.get("common_name")
+    if not isinstance(bird_id, str) or not isinstance(common_name, str) or not common_name:
+        raise ValueError("Published bird record is missing its ID or common name.")
+
+    return Bird(
+        id=bird_id,
+        tag=str(category),
+        name=common_name,
+        sci=record.get("scientific_name"),
+        family=record.get("family"),
+        hatch=record.get("hatch_info"),
+        life=record.get("lifespan"),
+        wing=record.get("wingspan"),
+        habitat=record.get("habitat"),
+        diet=record.get("diet"),
+        status=status,
+        status_text=status_text,
+        call=record.get("call"),
+        stat=stat,
+        notes=notes,
+        photo=photo_url,
+        photo_alt=record.get("photo_alt"),
+    )
+
+
+async def _load_catalog():
+    global birds
+
+    url_meta = document.querySelector('meta[name="supabase-url"]')
+    key_meta = document.querySelector('meta[name="supabase-publishable-key"]')
+    project_url = url_meta.content.strip() if url_meta is not None else ""
+    publishable_key = key_meta.content.strip() if key_meta is not None else ""
+    if not project_url or not publishable_key:
+        _show_message(
+            "Catalog configuration is missing. Add your Supabase project URL "
+            "and publishable key to index.html."
+        )
+        return
+
+    _show_message("Loading published birds…")
+    try:
+        client = create_catalog_data_client(
+            {"url": project_url, "publishableKey": publishable_key}
+        )
+        records = await client.list_published_birds()
+        loaded_birds = []
+        for record in records:
+            photo_url = None
+            if record.get("photo_path"):
+                try:
+                    signed_photo = await client.create_bird_photo_url(record)
+                    photo_url = signed_photo.url
+                except Exception as error:
+                    window.console.error(
+                        "Could not load a published bird photo.", error
+                    )
+            loaded_birds.append(_bird_from_record(record, photo_url))
+
+        birds = loaded_birds
+        categories = sorted({bird.tag for bird in birds})
+        _render_chips(categories)
+        _apply_filters()
+    except Exception as error:
+        window.console.error("Could not load the published bird catalog.", error)
+        grid.replaceChildren()
+        _show_message("Catalog unavailable. Please try again later.")
+
+
+def _start_catalog_load():
+    asyncio.ensure_future(_load_catalog())
+
+
 _bind(search, "input", _apply_filters)
-for chip in chips:
-    _bind(chip, "click", _on_chip_click)
+_bind(chips, "click", _on_chip_click)
 _bind(grid, "click", _on_grid_click)
 _bind(document.getElementById("closeBtn"), "click", _close_dossier)
 _bind(scrim, "click", _on_scrim_click)
 _bind(document, "keydown", _on_keydown)
 _bind(document.body, "error", _on_photo_error, capture=True)
+_show_message("Loading published birds…")
+_schedule(_start_catalog_load, 0)
 
 
 def _create_flock_svg():

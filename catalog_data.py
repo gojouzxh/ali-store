@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from typing import Any
 from urllib.parse import quote, urlencode, urljoin, urlsplit, urlunsplit
 
-from py import AbortController, Headers, Object, clearTimeout, fetch, window  # type: ignore[import-not-found]
+from js import AbortController, Headers, Object, clearTimeout, fetch, window  # type: ignore[import-not-found]
 from pyodide.ffi import create_proxy  # type: ignore[import-not-found]
 
 
